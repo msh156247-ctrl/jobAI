@@ -572,6 +572,14 @@ export default function SignUpPage() {
     try {
       setLoading(true)
       setError('')
+
+      // 네이버는 커스텀 OAuth 구현
+      if (provider === 'naver') {
+        window.location.href = '/api/auth/naver/login'
+        return
+      }
+
+      // 구글, 카카오는 Supabase OAuth 사용
       await signInWithProvider(provider)
       // OAuth 리다이렉트가 발생하므로 여기서는 추가 처리 불필요
     } catch (err) {

@@ -1,0 +1,124 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const code = searchParams.get('code')
+  const state = searchParams.get('state')
+  const error = searchParams.get('error')
+
+  // 에러 처리
+  if (error) {
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/login?error=naver_auth_failed`)
+  }
+
+  // 필수 파라미터 확인
+  if (!code || !state) {
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/login?error=invalid_request`)
+  }
+
+  // State 검증 (CSRF 방지)
+  const savedState = request.cookies.get('naver_oauth_state')?.value
+  if (state !== savedState) {
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/login?error=state_mismatch`)
+  }
+
+  try {
+    // 네이버 Access Token 요청
+    const clientId = process.env.NAVER_CLIENT_ID
+    const clientSecret = process.env.NAVER_CLIENT_SECRET
+    const redirectUri = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/auth/naver/callback`
+
+    const tokenResponse = await fetch(
+      `https://nid.naver.com/oauth2.0/token?grant_type=authorization_code&client_id=${clientId}&client_secret=${clientSecret}&code=${code}&state=${state}`,
+      { method: 'GET' }
+    )
+
+    const tokenData = await tokenResponse.json()
+
+    if (tokenData.error || !tokenData.access_token) {
+      throw new Error('Failed to get access token')
+    }
+
+    // 네이버 사용자 정보 요청
+    const userResponse = await fetch('https://openapi.naver.com/v1/nid/me', {
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+      },
+    })
+
+    const userData = await userResponse.json()
+
+    if (userData.resultcode !== '00') {
+      throw new Error('Failed to get user info')
+    }
+
+    const { id, email, name, profile_image } = userData.response
+
+    // Supabase에 사용자 생성 또는 로그인
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!, // 서비스 롤 키 사용
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    )
+
+    // 이메일로 기존 사용자 확인
+    const { data: existingUser } = await supabase.auth.admin.listUsers()
+    const userExists = existingUser?.users.find(u => u.email === email)
+
+    let userId: string
+
+    if (userExists) {
+      userId = userExists.id
+    } else {
+      // 새 사용자 생성
+      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+        email: email,
+        email_confirm: true,
+        user_metadata: {
+          name: name,
+          avatar_url: profile_image,
+          provider: 'naver',
+          naver_id: id,
+        },
+      })
+
+      if (createError || !newUser.user) {
+        throw createError || new Error('Failed to create user')
+      }
+
+      userId = newUser.user.id
+    }
+
+    // 세션 생성
+    const { data: sessionData, error: sessionError } = await supabase.auth.admin.generateLink({
+      type: 'magiclink',
+      email: email,
+    })
+
+    if (sessionError) {
+      throw sessionError
+    }
+
+    // 프론트엔드로 리다이렉트 (세션 토큰 전달)
+    const redirectUrl = new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')
+    redirectUrl.searchParams.set('access_token', sessionData.properties.hashed_token)
+    redirectUrl.searchParams.set('type', 'magiclink')
+
+    const response = NextResponse.redirect(redirectUrl.toString())
+
+    // State 쿠키 삭제
+    response.cookies.delete('naver_oauth_state')
+
+    return response
+
+  } catch (error) {
+    console.error('Naver OAuth error:', error)
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/login?error=naver_callback_failed`)
+  }
+}
