@@ -7,6 +7,7 @@ import { signIn } from '@/lib/auth'
 import { useAuth } from '@/contexts/AuthContext'
 import { ClientRateLimiter } from '@/lib/security/rate-limiter'
 import { InputValidator } from '@/lib/security/input-validator'
+import { signInWithProvider } from '@/lib/supabase'
 
 function LoginContent() {
   const [email, setEmail] = useState('')
@@ -49,6 +50,18 @@ function LoginContent() {
     } catch (err) {
       setError(err instanceof Error ? err.message : '로그인에 실패했습니다.')
     } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSocialLogin = async (provider: 'google' | 'kakao' | 'naver') => {
+    try {
+      setLoading(true)
+      setError('')
+      await signInWithProvider(provider)
+      // OAuth 리다이렉트가 발생하므로 여기서는 추가 처리 불필요
+    } catch (err) {
+      setError(err instanceof Error ? err.message : `${provider} 로그인에 실패했습니다.`)
       setLoading(false)
     }
   }
@@ -135,10 +148,9 @@ function LoginContent() {
             <div className="mt-6 grid grid-cols-3 gap-3">
               <button
                 type="button"
-                onClick={() => {
-                  alert('구글 로그인 준비 중입니다.')
-                }}
-                className="w-full inline-flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all duration-200 hover:scale-105 active:scale-95"
+                onClick={() => handleSocialLogin('google')}
+                disabled={loading}
+                className="w-full inline-flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -150,10 +162,9 @@ function LoginContent() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  alert('카카오 로그인 준비 중입니다.')
-                }}
-                className="w-full inline-flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-[#FEE500] text-sm font-medium text-[#191919] hover:bg-[#FDD835] hover:border-[#FDD835] transition-all duration-200 hover:scale-105 active:scale-95"
+                onClick={() => handleSocialLogin('kakao')}
+                disabled={loading}
+                className="w-full inline-flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-[#FEE500] text-sm font-medium text-[#191919] hover:bg-[#FDD835] hover:border-[#FDD835] transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="currentColor" d="M12 3c5.799 0 10.5 3.664 10.5 8.185 0 4.52-4.701 8.184-10.5 8.184a13.5 13.5 0 0 1-1.727-.11l-4.408 2.883c-.501.265-.678.236-.472-.413l.892-3.678c-2.88-1.46-4.785-3.99-4.785-6.866C1.5 6.665 6.201 3 12 3z"/>
@@ -162,10 +173,9 @@ function LoginContent() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  alert('네이버 로그인 준비 중입니다.')
-                }}
-                className="w-full inline-flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-[#03C75A] text-sm font-medium text-white hover:bg-[#02B350] hover:border-[#02B350] transition-all duration-200 hover:scale-105 active:scale-95"
+                onClick={() => handleSocialLogin('naver')}
+                disabled={loading}
+                className="w-full inline-flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-[#03C75A] text-sm font-medium text-white hover:bg-[#02B350] hover:border-[#02B350] transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="currentColor" d="M16.273 12.845 7.376 0H0v24h7.726V11.156L16.624 24H24V0h-7.727v12.845z"/>

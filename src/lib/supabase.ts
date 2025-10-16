@@ -65,3 +65,19 @@ export const signOut = async () => {
   const { error } = await supabase.auth.signOut()
   if (error) throw error
 }
+
+// 소셜 로그인 (Google, Kakao, Naver)
+export const signInWithProvider = async (provider: 'google' | 'kakao' | 'naver') => {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: provider as any,
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`,
+      queryParams: provider === 'google' ? {
+        access_type: 'offline',
+        prompt: 'consent',
+      } : undefined,
+    },
+  })
+  if (error) throw error
+  return data
+}
