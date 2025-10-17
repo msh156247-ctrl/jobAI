@@ -29,15 +29,19 @@ export async function GET(request: NextRequest) {
     const clientSecret = process.env.NAVER_CLIENT_SECRET
     const redirectUri = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/auth/naver/callback`
 
+    console.log('[Naver OAuth] Requesting token with:', { clientId, redirectUri, hasSecret: !!clientSecret })
+
     const tokenResponse = await fetch(
       `https://nid.naver.com/oauth2.0/token?grant_type=authorization_code&client_id=${clientId}&client_secret=${clientSecret}&code=${code}&state=${state}`,
       { method: 'GET' }
     )
 
     const tokenData = await tokenResponse.json()
+    console.log('[Naver OAuth] Token response:', tokenData)
 
     if (tokenData.error || !tokenData.access_token) {
-      throw new Error('Failed to get access token')
+      console.error('[Naver OAuth] Token error:', tokenData)
+      throw new Error(`Failed to get access token: ${tokenData.error_description || tokenData.error}`)
     }
 
     // 네이버 사용자 정보 요청
@@ -48,12 +52,15 @@ export async function GET(request: NextRequest) {
     })
 
     const userData = await userResponse.json()
+    console.log('[Naver OAuth] User data:', userData)
 
     if (userData.resultcode !== '00') {
-      throw new Error('Failed to get user info')
+      console.error('[Naver OAuth] User info error:', userData)
+      throw new Error(`Failed to get user info: ${userData.message}`)
     }
 
     const { id, email, name, profile_image } = userData.response
+    console.log('[Naver OAuth] User info:', { id, email, name })
 
     // Supabase에 사용자 생성 또는 로그인
     const supabase = createClient(
@@ -116,7 +123,11 @@ export async function GET(request: NextRequest) {
     return response
 
   } catch (error) {
-    console.error('Naver OAuth error:', error)
+    console.error('[Naver OAuth] Callback error:', error)
+    console.error('[Naver OAuth] Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/login?error=naver_callback_failed`)
   }
 }
