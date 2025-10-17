@@ -105,10 +105,8 @@ export async function GET(request: NextRequest) {
       throw sessionError
     }
 
-    // 프론트엔드로 리다이렉트 (세션 토큰 전달)
-    const redirectUrl = new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')
-    redirectUrl.searchParams.set('access_token', sessionData.properties.hashed_token)
-    redirectUrl.searchParams.set('type', 'magiclink')
+    // 팝업 콜백 페이지로 리다이렉트
+    const redirectUrl = new URL(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/popup-callback`)
 
     const response = NextResponse.redirect(redirectUrl.toString())
 

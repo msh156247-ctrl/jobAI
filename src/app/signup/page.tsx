@@ -15,7 +15,7 @@ import type { School, Certification, LanguageTest } from '@/lib/searchApi'
 import { validatePassword as validatePasswordStrength, getPasswordStrengthColor } from '@/utils/passwordValidator'
 import { ClientRateLimiter } from '@/lib/security/rate-limiter'
 import { InputValidator } from '@/lib/security/input-validator'
-import { signInWithProvider } from '@/lib/supabase'
+import { handleSocialLoginPopup } from '@/lib/socialLoginPopup'
 
 type Step = 1 | 2 | 3 | 4 | 5
 
@@ -568,24 +568,24 @@ export default function SignUpPage() {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  const handleSocialSignup = async (provider: 'google' | 'kakao' | 'naver') => {
-    try {
-      setLoading(true)
-      setError('')
+  const handleSocialSignup = (provider: 'google' | 'kakao' | 'naver') => {
+    setLoading(true)
+    setError('')
 
-      // 네이버는 커스텀 OAuth 구현
-      if (provider === 'naver') {
-        window.location.href = '/api/auth/naver/login'
-        return
+    handleSocialLoginPopup(
+      provider,
+      () => {
+        // 로그인 성공
+        setLoading(false)
+        refreshUser()
+        router.push('/')
+      },
+      (error) => {
+        // 로그인 실패
+        setError(error || `${provider} 간편 가입에 실패했습니다.`)
+        setLoading(false)
       }
-
-      // 구글, 카카오는 Supabase OAuth 사용
-      await signInWithProvider(provider)
-      // OAuth 리다이렉트가 발생하므로 여기서는 추가 처리 불필요
-    } catch (err) {
-      setError(err instanceof Error ? err.message : `${provider} 간편 가입에 실패했습니다.`)
-      setLoading(false)
-    }
+    )
   }
 
   return (
