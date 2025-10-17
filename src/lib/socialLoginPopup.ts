@@ -86,6 +86,9 @@ export function handleSocialLoginPopup(
       } else if (loginError) {
         localStorage.removeItem('social_login_error')
         onError?.(loginError)
+      } else {
+        // 사용자가 팝업을 그냥 닫은 경우
+        onError?.('로그인이 취소되었습니다.')
       }
     }
   }, 500)
