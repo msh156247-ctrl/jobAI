@@ -584,6 +584,10 @@ export default function SignUpPage() {
         // 로그인 실패
         setError(error || `${provider} 간편 가입에 실패했습니다.`)
         setLoading(false)
+      },
+      () => {
+        // 팝업 취소 (에러 메시지 없이 loading만 해제)
+        setLoading(false)
       }
     )
   }

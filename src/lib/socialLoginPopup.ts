@@ -43,7 +43,8 @@ export function openPopup(url: string, title: string, options: PopupOptions = {}
 export function handleSocialLoginPopup(
   provider: 'google' | 'kakao' | 'naver',
   onSuccess?: () => void,
-  onError?: (error: string) => void
+  onError?: (error: string) => void,
+  onCancel?: () => void
 ): void {
   let authUrl: string
   let popupTitle: string
@@ -87,8 +88,8 @@ export function handleSocialLoginPopup(
         localStorage.removeItem('social_login_error')
         onError?.(loginError)
       } else {
-        // 사용자가 팝업을 그냥 닫은 경우
-        onError?.('로그인이 취소되었습니다.')
+        // 사용자가 팝업을 그냥 닫은 경우 - 조용히 종료 (에러 메시지 없음)
+        onCancel?.()
       }
     }
   }, 500)
