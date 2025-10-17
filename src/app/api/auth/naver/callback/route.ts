@@ -62,6 +62,12 @@ export async function GET(request: NextRequest) {
     const { id, email, name, profile_image } = userData.response
     console.log('[Naver OAuth] User info:', { id, email, name })
 
+    // 이메일이 없으면 에러
+    if (!email) {
+      console.error('[Naver OAuth] Email not provided by Naver')
+      throw new Error('네이버에서 이메일 정보를 제공하지 않았습니다. 네이버 개발자센터에서 이메일을 필수 제공 항목으로 설정해주세요.')
+    }
+
     // Supabase에 사용자 생성 또는 로그인
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
