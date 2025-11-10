@@ -1,6 +1,6 @@
-# JobAI 2.0 - AI 기반 구인구직 매칭 플랫폼
+# JobAI - AI 기반 스마트 채용 매칭 플랫폼
 
-Next.js + TypeScript + Supabase + OpenAI로 구축된 차세대 지능형 구인구직 플랫폼입니다.
+Next.js + TypeScript + OpenAI로 구축된 차세대 지능형 구인구직 플랫폼입니다.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
@@ -11,78 +11,96 @@ Next.js + TypeScript + Supabase + OpenAI로 구축된 차세대 지능형 구인
 
 ## 🎯 주요 기능
 
-### 🤖 AI 기능 (JobAI 2.0)
+### 🔍 스마트 검색 & 필터링
 
-#### 1. AI 매칭 인사이트 생성기
-- GPT-4o-mini 기반 자연어 매칭 설명
-- 강점/약점 분석 및 개선 포인트 제시
-- 실시간 인사이트 생성 (1시간 캐싱)
-- **위치:** 추천 공고 카드 내 "AI 매칭 인사이트" 버튼
+#### 1. 고급 검색 시스템
+- **세부 업종별 기술 스택 다중 선택** (25+ 업종)
+  - IT/소프트웨어: 백엔드, 프론트엔드, 풀스택, 모바일, DevOps, AI/ML, DBA, QA/테스트 등
+  - 디자인: UI/UX, 그래픽, 웹디자인, 제품디자인, 영상/모션, 3D, 브랜드
+  - 기획/PM: 서비스기획, 프로젝트관리, 데이터분석, 상품기획, 전략기획, PO
+  - 마케팅: 디지털마케팅, 콘텐츠마케팅, 브랜드마케팅, 퍼포먼스마케팅, SNS마케팅, 그로스해킹, SEO
+  - 각 세부 업종마다 맞춤형 기술 스택 제공
 
-#### 2. AI 자기소개서 리뷰어
-- GPT-4 Turbo 기반 전문 분석
-- 0-100점 종합 평가 + 등급 (우수/양호/보통/미흡)
-- 강점 3-5개, 약점 2-4개 분석
-- Before/After 문장 개선 예시 2-3개
-- 키워드 분석 (포함된 키워드 + 추가 권장 키워드)
-- **위치:** `/cover-letter-review` 페이지
+- **복지 키워드 다중 선택** (30개 옵션)
+  - 근무 환경: 워라벨, 재택근무, 유연근무, 연차자유, 자율출퇴근
+  - 급여/성과: 4대보험, 퇴직금, 연봉협상가능, 성과급, 인센티브, 스톡옵션
+  - 복지 혜택: 복지포인트, 식대지원, 교통비지원, 통신비지원
+  - 자기계발: 자기계발비, 도서구입비, 교육지원, 어학지원, 자격증지원
+  - 기타 복지: 건강검진, 의료비지원, 경조사지원, 휴양시설, 사내카페 등
 
-#### 3. Graph 기반 추천 시스템
-- OpenAI text-embedding-3-small (1536차원)
-- Supabase pgvector + IVFFlat 인덱스
-- 코사인 유사도 기반 벡터 검색
-- 공고-사용자 임베딩 자동 생성
-- **API:** `/api/recommendations/vector-search`
+- **지역 드롭다운** (33개 지역)
+  - 서울, 경기, 인천, 부산, 대구, 대전, 광주, 울산, 세종
+  - 강원, 충북, 충남, 전북, 전남, 경북, 경남, 제주
+  - 세부 구: 강남구, 서초구, 송파구, 영등포구, 마포구 등
 
-#### 4. Thompson Sampling Bandit (강화학습)
-- Multi-Armed Bandit 알고리즘
-- Beta 분포 기반 불확실성 모델링
-- Explore-Exploit 자동 균형
-- 행동 기반 리워드 학습:
-  - View: +0.1, Click: +1.0, Save: +1.5
-  - Apply: +3.0, Reject: -2.0
-  - Scroll Depth/Dwell Time 보너스
-- **API:** `/api/recommendations/bandit`
+- **간소화된 연봉/경력 필터**
+  - 연봉: 최소 연봉만 입력 (입력값 이상인 공고만 검색)
+  - 경력: 최대 경력만 입력 (입력값 이하의 경력 요구 공고만 검색)
 
-#### 5. 하이브리드 추천 시스템
-- Vector Embedding (60%) + Thompson Sampling (40%)
-- 1단계: Vector로 후보 필터링 (상위 50개)
-- 2단계: Bandit으로 최종 선택 (상위 20개)
-- 알고리즘 성능 비교 기능
-- **API:** `/api/recommendations/hybrid`
+- **스마트 정렬 옵션**
+  - 최신순, 마감임박순, 연봉높은순, 매칭도순
 
-#### 6. 행동 추적 + Time Decay
-- Scroll Depth 자동 추적 (0-100%)
-- Dwell Time 측정 (초 단위)
-- 지수 감소 함수: `weight = e^(-0.05 * days)`
-- 14일 후 50% 가중치 감소
-- **Hook:** `useEnhancedTracking`
+#### 2. 우선순위 조정 기능
+- **드래그 앤 드롭으로 우선순위 관리** (최대 5개)
+  - 연봉, 근무지, 근무형태, 기술스택, 경력, 회사규모, 복지, 업종
+  - 직관적인 순서 조정으로 맞춤형 검색 가능
+  - 숫자로 순위 표시 (1순위 ~ 5순위)
 
-#### 7. 기업용 AI 후보자 매칭
-- 벡터 유사도 기반 후보자 검색
-- 매칭 점수(%) 실시간 계산
-- 경력/스킬 필터링
-- 후보자 프로필 통합 대시보드
-- **페이지:** `/employer/candidates`
+#### 3. AI 키워드 추출
+- **GPT-4 기반 경력 설명 분석**
+  - 자유 형식의 경력/경험 설명 입력
+  - AI가 핵심 키워드 자동 추출 (최대 10개)
+  - 추출된 키워드를 검색 필터로 자동 적용
+  - 기술 스택, 직무 용어, 업계/도메인, 주요 경험, 자격증 등 분류
 
-### 👥 구직자 기능
-- ✅ 5단계 회원가입 (이메일/휴대폰 인증)
-- ✅ AI 맞춤 추천 (Hybrid 알고리즘)
-- ✅ 우선순위 설정 (클릭 편집, 드래그 정렬)
-- ✅ 스마트 검색 (키워드, 지역, 연봉, 근무형태)
-- ✅ 지원 관리 (이력서, 포트폴리오, 자기소개서)
-- ✅ 북마크 시스템
+### 🌐 채용 공고 크롤링 인프라
 
-### 🏢 기업 기능
-- ✅ 채용공고 관리 (CRUD, 상태, 통계)
-- ✅ AI 후보자 추천 (벡터 기반)
-- ✅ 지원자 관리 (지원 현황, 면접 일정)
-- ✅ 회사 프로필 (로고, 소개, 복지)
+#### 4. 멀티 사이트 크롤링 시스템
+- **지원 사이트** (5개)
+  - 사람인 (saramin.co.kr)
+  - 잡코리아 (jobkorea.co.kr)
+  - 원티드 (wanted.co.kr)
+  - 인크루트 (incruit.com)
+  - 잡플래닛 (jobplanet.co.kr)
 
-### 🌐 공통 기능
-- ✅ 실시간 채팅 (구직자-기업)
-- ✅ 커뮤니티 (Q&A, 정보 공유)
-- ✅ 반응형 디자인 (Mobile/Tablet/Desktop)
+- **크롤링 기능**
+  - 검색 조건을 각 사이트 쿼리 파라미터로 자동 변환
+  - 병렬 크롤링으로 빠른 결과 수집
+  - 사이트별 개별 크롤링 지원
+  - 크롤링 진행 상태 실시간 표시
+
+- **데이터 정규화**
+  - 모든 사이트의 데이터를 통일된 형식으로 변환
+  - 실제 구직 사이트 URL 유지 (외부 링크)
+  - 지원하기 버튼 클릭 시 실제 사이트로 이동
+
+### 📊 데이터 관리
+
+#### 5. 공고 통계 & 분석
+- **크롤링 메타데이터 추적**
+  - 마지막 크롤링 시간
+  - 사이트별 공고 수
+  - 자동 업데이트 주기 (2주)
+
+- **지원 통계 추적**
+  - 사이트별 지원 횟수
+  - 공고별 지원 현황
+  - localStorage 기반 로컬 저장
+
+#### 6. 데이터 관리 기능
+- **마감 공고 자동 삭제**
+- **전체 크롤링 데이터 초기화**
+- **필터 초기화**
+
+### 👥 사용자 설정
+
+#### 7. 사용자 프로필 관리
+- **선호 조건 설정**
+  - 선호 지역, 연봉 범위, 근무 형태
+  - 직무 카테고리, 기술 스택
+  - 경력 수준
+- **설정 기반 자동 매칭**
+- **공고 북마크 시스템**
 
 ---
 
@@ -92,21 +110,14 @@ Next.js + TypeScript + Supabase + OpenAI로 구축된 차세대 지능형 구인
 - **Framework:** Next.js 15.5.4 (App Router + Turbopack)
 - **Language:** TypeScript 5.0
 - **Styling:** Tailwind CSS 4
-- **State:** Context API + Zustand 5.0.8
-- **GraphQL:** Apollo Client 4.0.7
+- **State:** Zustand 5.0.8
 - **Icons:** Lucide React 0.544.0
+- **Date Utility:** date-fns 4.1.0
 
-### Backend & Database
-- **Backend:** Supabase (PostgreSQL + Auth + Storage + Realtime)
-- **Vector DB:** pgvector (1536차원 임베딩)
-- **AI:** OpenAI GPT-4 Turbo, GPT-4o-mini, text-embedding-3-small
-- **Authentication:** Supabase Auth (Row Level Security)
-
-### 알고리즘
-- **추천 시스템:** Hybrid (Vector 60% + Bandit 40%)
-- **협업 필터링:** Cosine Similarity
-- **강화학습:** Thompson Sampling (Beta 분포)
-- **시계열:** Exponential Time Decay
+### Backend & AI
+- **AI:** OpenAI GPT-4 (키워드 추출)
+- **크롤링:** 채용 사이트 크롤링 시뮬레이션 (실제 환경에서는 Puppeteer/Cheerio 사용 가능)
+- **Storage:** localStorage (클라이언트 사이드 저장)
 
 ### 개발 도구
 - **Package Manager:** npm
@@ -140,42 +151,13 @@ npm install
 `.env.local` 파일을 생성:
 
 ```bash
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
-
-# OpenAI Configuration
+# OpenAI Configuration (키워드 추출 기능에 필요)
 OPENAI_API_KEY=your_openai_api_key_here
-
-# API Configuration
-NEXT_PUBLIC_USE_API=true
-NEXT_PUBLIC_USE_GRAPHQL=true
 ```
 
-**📚 자세한 설정:** [.env.example](.env.example) 참조
+**참고**: OpenAI API 키가 없어도 기본 기능은 작동하며, 키워드 추출 시 간단한 패턴 매칭으로 대체됩니다.
 
-### 4. Supabase 마이그레이션
-
-```bash
-# Supabase CLI 설치
-npm install -g supabase
-
-# 로그인
-supabase login
-
-# 프로젝트 연결
-supabase link --project-ref your-project-id
-
-# 마이그레이션 실행
-supabase db push
-```
-
-마이그레이션 파일:
-- `001_enable_pgvector.sql` - pgvector 확장 + 임베딩 테이블
-- `002_bandit_policy.sql` - Bandit 정책 + 행동 로그
-
-### 5. 개발 서버 실행
+### 4. 개발 서버 실행
 
 ```bash
 npm run dev
@@ -193,277 +175,180 @@ jobai/
 │   ├── app/                          # Next.js 15 App Router
 │   │   ├── api/                      # API Routes
 │   │   │   ├── ai/                   # AI 기능
-│   │   │   │   ├── insights/         # 매칭 인사이트
-│   │   │   │   └── review-cover-letter/  # 자기소개서 리뷰
-│   │   │   ├── embeddings/           # 임베딩 생성
-│   │   │   │   ├── generate-job/
-│   │   │   │   └── generate-user/
-│   │   │   ├── recommendations/      # 추천 시스템
-│   │   │   │   ├── vector-search/    # 벡터 검색
-│   │   │   │   ├── bandit/           # Thompson Sampling
-│   │   │   │   └── hybrid/           # 하이브리드
-│   │   │   └── employer/             # 기업용
-│   │   │       └── candidates/       # 후보자 매칭
-│   │   ├── cover-letter-review/      # 자기소개서 리뷰 페이지
-│   │   ├── employer/                 # 기업 대시보드
-│   │   │   └── candidates/           # 후보자 매칭 페이지
-│   │   └── ... (기타 페이지)
+│   │   │   │   └── extract-keywords/ # GPT-4 키워드 추출
+│   │   │   └── crawl/                # 크롤링 API
+│   │   ├── page.tsx                  # 메인 페이지 (검색 & 필터)
+│   │   ├── settings/                 # 사용자 설정
+│   │   └── search/                   # 검색 결과 페이지
 │   ├── components/                   # React 컴포넌트
-│   │   ├── InsightTag.tsx            # AI 인사이트 UI
-│   │   ├── CoverLetterReviewer.tsx   # 자기소개서 리뷰어 UI
-│   │   └── JobMatchCard.tsx          # 공고 카드 (인사이트 통합)
+│   │   ├── Header.tsx                # 헤더
+│   │   ├── JobDetailModal.tsx        # 공고 상세 모달
+│   │   └── PreferencesModal.tsx      # 선호 조건 설정 모달
 │   ├── lib/                          # 핵심 로직
-│   │   ├── algorithms/               # 알고리즘
-│   │   │   ├── thompson-sampling.ts  # Thompson Sampling Bandit
-│   │   │   ├── time-decay.ts         # Time Decay 함수
-│   │   │   └── collaborative-filter.ts
-│   │   ├── tracking/                 # 행동 추적
-│   │   │   └── behavior-tracker.ts
-│   │   └── supabase.ts
-│   ├── hooks/                        # Custom Hooks
-│   │   ├── useEnhancedTracking.ts    # Scroll/Dwell 추적
-│   │   └── useJobSave.ts
-│   └── types/
-├── supabase/                         # Supabase 설정
-│   └── migrations/
-│       ├── 001_enable_pgvector.sql   # pgvector + 임베딩
-│       └── 002_bandit_policy.sql     # Bandit + 행동 로그
-├── .env.example
+│   │   ├── jobCrawler.ts             # 크롤링 시뮬레이션
+│   │   ├── jobStats.ts               # 지원 통계 관리
+│   │   ├── mockData.ts               # Mock 데이터
+│   │   ├── userPreferences.ts        # 사용자 설정 관리
+│   │   └── scrapers/                 # 스크레이퍼 모듈
+│   │       └── index.ts              # 사이트별 크롤러
+│   └── services/
+│       └── crawler.ts                # 크롤링 유틸리티
+├── CRAWLING_GUIDE.md                 # 크롤링 가이드
 └── README.md
 ```
 
 ---
 
-## 🔬 AI 시스템 아키텍처
+## 🔬 시스템 아키텍처
 
-### 추천 시스템 파이프라인
+### 검색 & 필터링 파이프라인
 
 ```
 사용자 입력
     ↓
-[1단계: Vector Embedding]
-    → OpenAI 임베딩 생성 (1536차원)
-    → pgvector 코사인 유사도 검색
-    → 후보 공고 50개 필터링
+[기본 필터 적용]
+    → 업종, 세부업종, 지역, 근무형태
+    → 연봉, 경력 범위 필터링
     ↓
-[2단계: Thompson Sampling]
-    → Beta 분포 샘플링
-    → Explore-Exploit 균형
-    → 최종 20개 선택
+[고급 필터 적용]
+    → 기술 스택 (AND 조건)
+    → 복지 키워드 (OR 조건)
+    → 기업 규모, 학력 조건
     ↓
-[3단계: 하이브리드 점수]
-    → Vector (60%) + Bandit (40%)
-    → 최종 순위 결정
+[AI 키워드 필터]
+    → GPT-4로 경력 설명 분석
+    → 핵심 키워드 추출 (최대 10개)
+    → 키워드 매칭 (OR 조건)
     ↓
-추천 결과
+[우선순위 정렬]
+    → 사용자 설정 우선순위 (1-5순위)
+    → 최신순/마감임박순/연봉순/매칭도순
+    ↓
+검색 결과
 ```
 
-### 리워드 시스템
+### 크롤링 시스템
 
-```typescript
-// 기본 리워드
-View: +0.1
-Click: +1.0
-Save: +1.5
-Apply: +3.0
-Reject: -2.0
-
-// Scroll Depth 보너스
-50%: +0.5
-75%: +0.75
-100%: +1.0
-
-// Dwell Time 보너스
-30s: +0.5
-60s: +1.0
-120s: +1.5
-
-// Time Decay
-weight = base_weight * e^(-0.05 * days)
+```
+크롤링 트리거 (자동/수동)
+    ↓
+[병렬 크롤링]
+    → 사람인, 잡코리아, 원티드
+    → 인크루트, 잡플래닛
+    ↓
+[데이터 정규화]
+    → 통일된 스키마로 변환
+    → 실제 사이트 URL 유지
+    ↓
+[로컬 저장]
+    → localStorage 저장
+    → 메타데이터 업데이트
+    ↓
+검색 가능 공고 데이터
 ```
 
 ---
 
 ## 📊 API 문서
 
-### AI 기능
+### AI 키워드 추출
 
-#### 1. AI 매칭 인사이트
+#### POST /api/ai/extract-keywords
+
+경력/경험 설명에서 GPT-4를 사용하여 핵심 키워드를 추출합니다.
+
+**요청**:
 ```typescript
-POST /api/ai/insights
+POST /api/ai/extract-keywords
 {
-  "jobId": "uuid",
-  "jobTitle": "백엔드 개발자",
-  "company": "카카오",
-  "requiredSkills": ["Node.js", "TypeScript"],
-  "userSkills": ["JavaScript", "React"],
-  "matchScore": 75
-}
-
-// Response
-{
-  "insight": "자연어 설명...",
-  "tags": ["강점1", "강점2"],
-  "strengths": ["구체적 강점..."],
-  "recommendations": ["개선 방향..."]
+  "description": "3년간 React와 Node.js를 활용한 풀스택 개발 경험이 있습니다. AWS 클라우드 인프라 구축 및 CI/CD 파이프라인 구성 경험도 있습니다."
 }
 ```
 
-#### 2. 자기소개서 리뷰
-```typescript
-POST /api/ai/review-cover-letter
+**응답**:
+```json
 {
-  "coverLetter": "자기소개서 내용...",
-  "jobTitle": "프론트엔드 개발자",
-  "company": "네이버"
-}
-
-// Response
-{
-  "score": 85,
-  "grade": "양호",
-  "strengths": ["강점1", "강점2", "강점3"],
-  "weaknesses": ["약점1", "약점2"],
-  "suggestions": ["제안1", "제안2"],
-  "improvedSentences": [
-    { "original": "...", "improved": "..." }
-  ],
-  "keywordAnalysis": {
-    "presentKeywords": ["키워드1"],
-    "missingKeywords": ["추가 키워드1"]
-  }
+  "keywords": ["React", "Node.js", "풀스택", "AWS", "CI/CD", "클라우드", "인프라"],
+  "originalDescription": "3년간 React와 Node.js를..."
 }
 ```
 
-### 추천 시스템
+**주요 기능**:
+- GPT-4 기반 자연어 처리
+- 기술 스택, 직무, 도메인, 경험, 자격증 자동 분류
+- 최대 10개 키워드 추출
+- OpenAI API 없을 시 패턴 매칭으로 대체 (fallback: true)
 
-#### 3. 벡터 검색
+### 크롤링 API
+
+#### POST /api/crawl
+
+채용 사이트에서 공고를 크롤링합니다 (현재는 시뮬레이션).
+
+**요청**:
 ```typescript
-POST /api/recommendations/vector-search
+POST /api/crawl
 {
-  "userId": "uuid",
-  "matchThreshold": 0.5,
-  "matchCount": 20
-}
-
-// Response
-{
-  "jobs": [...],
-  "totalCount": 15,
-  "matchThreshold": 0.5
+  "sites": ["saramin", "jobkorea", "wanted"],  // 선택적
+  "keyword": "백엔드 개발자",
+  "location": "서울",
+  "minSalary": 4000,
+  "maxSalary": 7000,
+  "minExperience": 0,
+  "maxExperience": 5,
+  "employmentType": "onsite",
+  "techStack": "Python",
+  "limit": 50
 }
 ```
 
-#### 4. Bandit 추천
-```typescript
-POST /api/recommendations/bandit
+**응답**:
+```json
 {
-  "userId": "uuid",
-  "candidateJobIds": ["id1", "id2", ...],
-  "count": 10,
-  "updatePolicy": true
-}
-
-// Response
-{
-  "jobs": [...],
-  "algorithm": "thompson_sampling"
-}
-```
-
-#### 5. 하이브리드 추천
-```typescript
-POST /api/recommendations/hybrid
-{
-  "userId": "uuid",
-  "count": 20,
-  "vectorWeight": 0.6,
-  "banditWeight": 0.4
-}
-
-// Response
-{
+  "success": true,
   "jobs": [
     {
-      ...jobData,
-      "scores": {
-        "vector": 0.85,
-        "bandit": 0.72,
-        "hybrid": 0.798
-      }
+      "id": "saramin-0001",
+      "title": "백엔드 개발자",
+      "company": "네이버",
+      "location": "서울 강남구",
+      "salary": { "min": 4000, "max": 6000 },
+      "experience": { "min": 0, "max": 3 },
+      "skills": ["Python", "Django", "PostgreSQL"],
+      "sourceUrl": "https://www.saramin.co.kr/...",
+      "source": "saramin",
+      "postedAt": "2025-11-10T00:00:00.000Z",
+      "deadline": "2025-12-10T23:59:59.000Z"
     }
-  ]
+  ],
+  "totalJobs": 50,
+  "errors": [],
+  "timestamp": "2025-11-10T12:00:00.000Z"
 }
 ```
 
-### 기업용
+**지원 사이트**:
+- saramin (사람인)
+- jobkorea (잡코리아)
+- wanted (원티드)
+- incruit (인크루트)
+- jobplanet (잡플래닛)
 
-#### 6. 후보자 매칭
-```typescript
-POST /api/employer/candidates
-{
-  "jobId": "uuid",
-  "matchThreshold": 0.6,
-  "matchCount": 20
-}
-
-// Response
-{
-  "candidates": [
-    {
-      "userId": "uuid",
-      "similarityScore": 0.85,
-      "matchPercentage": 85,
-      "profile": { ... }
-    }
-  ]
-}
-```
-
-**📚 전체 API 문서:** [API_DOCS.md](./API_DOCS.md)
+**참고**: 실제 크롤링 구현은 [CRAWLING_GUIDE.md](./CRAWLING_GUIDE.md)를 참조하세요.
 
 ---
 
 ## 🔐 보안
 
-### 비밀번호 검증
-- ✅ 최소 8자, 영문+숫자+특수문자 3가지 이상
-- ✅ 연속/반복 문자 차단
-- ✅ 일반 패턴 차단
-
-### 인증 & 권한
-- ✅ Supabase Auth (이메일/소셜)
-- ✅ Row Level Security (RLS)
-- ✅ API 키 환경 변수 분리
-
-### 데이터 보호
-- ✅ Service Role Key 서버 전용
-- ✅ 클라이언트 노출 방지
-
----
-
-## 🧪 테스트
-
-### 수동 테스트 시나리오
-
-```bash
-# 1. AI 기능 테스트
-- 자기소개서 리뷰 (/cover-letter-review)
-- AI 인사이트 (추천 공고 카드)
-
-# 2. 추천 시스템 테스트
-- 벡터 검색 (프로필 업데이트 → 추천 확인)
-- Bandit 학습 (공고 클릭 → 추천 변화 확인)
-
-# 3. 기업 기능 테스트
-- 후보자 매칭 (/employer/candidates)
-```
+- ✅ API 키 환경 변수 분리 (.env.local)
+- ✅ 클라이언트 사이드에서 API 키 노출 방지
+- ✅ CORS 설정 (Next.js 기본 보안)
 
 ---
 
 ## 🚀 배포
 
-### Vercel 배포
+### Vercel 배포 (권장)
 
 ```bash
 # Vercel CLI 설치
@@ -474,77 +359,57 @@ vercel
 
 # 환경 변수 설정
 # Vercel Dashboard → Settings → Environment Variables
-# .env.local의 모든 변수 추가
+# OPENAI_API_KEY 추가
 ```
 
-### Supabase 설정
-
-1. **프로젝트 생성**: https://supabase.com
-2. **마이그레이션 실행**: `supabase db push`
-3. **API 키 복사**: Settings → API → `anon key`, `service_role key`
-4. **RLS 활성화**: 필수!
-
-### 임베딩 초기 데이터 생성
-
-```bash
-# 공고 임베딩 배치 생성
-PUT /api/embeddings/generate-job
-{ "limit": 100 }
-
-# 사용자 임베딩 개별 생성
-POST /api/embeddings/generate-user
-{ "userId": "uuid", "skills": [...] }
-```
+### 환경 변수 설정
+Vercel 대시보드에서 다음 변수를 설정하세요:
+- `OPENAI_API_KEY`: OpenAI API 키 (키워드 추출 기능용)
 
 ---
 
-## 📈 성능 지표
+## 📈 주요 기능 설명
 
-### 빌드 결과
-```
-✓ Compiled successfully
-33 pages
-11 API routes
-Total First Load JS: 135 kB
-```
+### 고급 검색
+1. **기본 필터**: 업종, 지역, 근무형태, 정렬
+2. **세부 업종 선택**: 25+ 세부 업종별 맞춤 기술 스택
+3. **다중 선택**: 기술 스택 (AND), 복지 (OR)
+4. **우선순위**: 드래그 앤 드롭으로 5개까지 순위 조정
 
-### AI 응답 시간
-- **인사이트 생성**: ~1.5초 (GPT-4o-mini)
-- **자기소개서 리뷰**: ~3초 (GPT-4 Turbo)
-- **벡터 검색**: <100ms (pgvector)
-- **Bandit 선택**: <50ms (in-memory)
+### AI 키워드 추출
+1. 경력/경험을 자유롭게 텍스트로 입력
+2. GPT-4가 자동으로 핵심 키워드 추출
+3. 추출된 키워드로 공고 자동 필터링
+
+### 크롤링 시스템
+1. 5개 주요 구직 사이트 지원
+2. 자동 크롤링 (2주 주기) 또는 수동 크롤링
+3. localStorage 기반 로컬 캐싱
 
 ---
 
 ## 🛠️ 트러블슈팅
 
 ### Q: OpenAI API 키 오류
-**A:** `.env.local`에 `OPENAI_API_KEY` 확인 → 서버 재시작
+**A:** `.env.local`에 `OPENAI_API_KEY` 확인 → 서버 재시작. 키가 없어도 기본 기능은 작동하며 패턴 매칭으로 대체됩니다.
 
-### Q: pgvector 함수 없음
-**A:** `supabase db push` 실행 → 마이그레이션 적용
+### Q: 크롤링 데이터가 보이지 않음
+**A:** 메인 페이지 상단의 "채용공고 크롤링" 탭에서 "전체 크롤링 시작" 버튼 클릭
 
-### Q: 임베딩 생성 실패
-**A:** Service Role Key 확인 → Anon Key는 권한 부족
-
-### Q: Bandit 추천 결과 없음
-**A:** 먼저 행동 로그 축적 필요 (최소 10개 이상)
+### Q: 필터링이 작동하지 않음
+**A:** 브라우저 콘솔에서 에러 확인. localStorage를 지원하는 브라우저인지 확인
 
 ---
 
 ## 📚 참고 자료
 
 ### 공식 문서
-- [Next.js](https://nextjs.org/docs)
-- [Supabase](https://supabase.com/docs)
-- [OpenAI](https://platform.openai.com/docs)
-- [pgvector](https://github.com/pgvector/pgvector)
+- [Next.js 15 문서](https://nextjs.org/docs)
+- [OpenAI API 문서](https://platform.openai.com/docs)
+- [Tailwind CSS](https://tailwindcss.com/docs)
 
 ### 프로젝트 문서
-- [진행 상황](./.claude/progress.md)
-- [기술 스펙](./JOBAI_2.0_TECHNICAL_SPEC.md)
-- [API 문서](./API_DOCS.md)
-- [배포 가이드](./DEPLOYMENT.md)
+- [크롤링 가이드](./CRAWLING_GUIDE.md) - 실제 크롤링 구현 방법
 
 ---
 
@@ -560,12 +425,13 @@ Total First Load JS: 135 kB
 
 ## 📊 프로젝트 통계
 
-- **총 코드 라인:** ~20,000+
-- **페이지:** 33개
-- **API 엔드포인트:** 11개
-- **컴포넌트:** 50+ 개
-- **알고리즘:** 3개 (Vector, Bandit, Hybrid)
-- **테스트 커버리지:** TBD
+- **API 엔드포인트:** 2개 (키워드 추출, 크롤링)
+- **지원 채용 사이트:** 5개
+- **업종 카테고리:** 10개 (IT, 디자인, 기획/PM, 마케팅 등)
+- **세부 업종:** 25+ 개
+- **복지 옵션:** 30개
+- **지역 옵션:** 33개
+- **기술 스택 맵핑:** 1,000+ 개 기술
 
 ---
 
@@ -577,19 +443,21 @@ MIT License
 
 ## 👥 제작자
 
-- **개발자:** JobAI Team
+- **개발:** JobAI Team
 - **AI 어시스턴트:** Claude (Anthropic)
 
 ---
 
 ## 🙏 감사의 말
 
-- Next.js, Supabase, OpenAI, Tailwind CSS 팀
-- pgvector 오픈소스 커뮤니티
-- Thompson Sampling 연구자들
+이 프로젝트는 다음 오픈소스 및 서비스를 활용합니다:
+- Next.js 15 (Vercel)
+- OpenAI GPT-4
+- Tailwind CSS
+- Lucide React (아이콘)
 
 ---
 
 **⭐ 이 프로젝트가 도움이 되었다면 Star를 눌러주세요!**
 
-**🚀 JobAI 2.0 - AI가 만드는 최고의 매칭**
+**🚀 JobAI - 스마트한 채용 매칭의 시작**
