@@ -82,8 +82,6 @@ export function handleSocialLoginPopup(
       if (loginSuccess === 'true') {
         localStorage.removeItem('social_login_success')
         onSuccess?.()
-        // 페이지 새로고침하여 세션 업데이트
-        window.location.reload()
       } else if (loginError) {
         localStorage.removeItem('social_login_error')
         onError?.(loginError)

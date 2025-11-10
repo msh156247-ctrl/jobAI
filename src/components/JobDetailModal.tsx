@@ -7,6 +7,7 @@ import { X, MapPin, Briefcase, Clock, Building, BookmarkCheck, Bookmark, Externa
 import type { Job } from '@/lib/mockData'
 import { getCompanyById } from '@/lib/mockData'
 import { isExternalJob, isChatAvailable } from '@/services/crawler'
+import { trackApply } from '@/lib/jobStats'
 import Link from 'next/link'
 
 interface JobDetailModalProps {
@@ -26,6 +27,17 @@ export default function JobDetailModal({
 }: JobDetailModalProps) {
   const router = useRouter()
   const company = getCompanyById(job.companyId)
+
+  // 출처 사이트 이름 추출
+  const getSourceSiteName = (url?: string): string | null => {
+    if (!url) return null
+    if (url.includes('saramin.co.kr')) return 'saramin'
+    if (url.includes('jobkorea.co.kr')) return 'jobkorea'
+    if (url.includes('wanted.co.kr')) return 'wanted'
+    if (url.includes('incruit.com')) return 'incruit'
+    if (url.includes('jobplanet.co.kr')) return 'jobplanet'
+    return null
+  }
 
   // ESC 키로 닫기
   useEffect(() => {
@@ -226,19 +238,23 @@ export default function JobDetailModal({
 
         {/* 푸터 - 액션 버튼 */}
         <div className="sticky bottom-0 bg-white border-t px-4 sm:px-6 py-4">
-          {isExternalJob(job as any) ? (
-            // 외부 공고 - 외부 링크로 이동
+          {(job as any).sourceUrl ? (
+            // 외부 공고 - 실제 채용 사이트로 이동
             <a
-              href={(job as any).externalUrl}
+              href={(job as any).sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => {
+                const source = getSourceSiteName((job as any).sourceUrl) || 'unknown'
+                trackApply(job.id, source)
+              }}
               className="block w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold text-center hover:bg-blue-700 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
             >
-              <span>원본 공고 보기</span>
+              <span>지원하기</span>
               <ExternalLink size={20} />
             </a>
           ) : (
-            // 내부 공고 - 지원하기만
+            // 내부 공고 - 지원하기 페이지로 이동
             <Link
               href={`/apply/${job.id}`}
               className="block w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold text-center hover:bg-blue-700 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"

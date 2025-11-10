@@ -7,13 +7,17 @@ export interface Job {
   companyId: string
   location: string
   salary: { min: number; max: number }
+  experience?: { min: number; max: number }
   workType: 'onsite' | 'dispatch' | 'remote'
   description: string
   requirements: string[]
+  preferredQualifications?: string[]
   skills: string[]
+  keywords?: string[]
   industry: string
   postedAt: string
   deadline: string
+  sourceUrl?: string
 }
 
 export interface Company {
@@ -44,18 +48,51 @@ export interface InterviewSlot {
 
 // Generate 60+ fake jobs
 function generateMockJobs(): Job[] {
-  const jobTitles = [
-    '프론트엔드 개발자', '백엔드 개발자', '풀스택 개발자', 'DevOps 엔지니어',
-    'iOS 개발자', 'Android 개발자', 'React 개발자', 'Node.js 개발자',
-    'Python 개발자', 'Java 개발자', 'C++ 개발자', 'QA 엔지니어',
-    '데이터 사이언티스트', '머신러닝 엔지니어', 'AI 연구원', '시스템 엔지니어',
-    '네트워크 엔지니어', '보안 엔지니어', 'DBA', '클라우드 엔지니어',
-    'UI/UX 디자이너', '웹 디자이너', '그래픽 디자이너', '제품 매니저',
-    '프로젝트 매니저', '서비스 기획자', '마케팅 매니저', '영업 담당자',
-    '경영 지원', '인사 담당자', '재무 담당자', '회계 담당자',
-    '법무 담당자', '고객 지원', '콘텐츠 작가', '기술 영업',
-    '솔루션 아키텍트', '테크니컬 라이터', '블록체인 개발자', '게임 개발자'
-  ]
+  // 업종별 직무 매핑
+  const jobsByIndustry: Record<string, string[]> = {
+    'IT/소프트웨어': [
+      '프론트엔드 개발자', '백엔드 개발자', '풀스택 개발자', 'DevOps 엔지니어',
+      'iOS 개발자', 'Android 개발자', 'React 개발자', 'Node.js 개발자',
+      'Python 개발자', 'Java 개발자', 'QA 엔지니어', '데이터 사이언티스트',
+      '머신러닝 엔지니어', 'AI 연구원', '시스템 엔지니어'
+    ],
+    '디자인': [
+      'UI/UX 디자이너', '웹 디자이너', '그래픽 디자이너', '제품 디자이너',
+      '영상 디자이너', '모션 그래픽 디자이너', '3D 디자이너', '브랜드 디자이너'
+    ],
+    '기획/PM': [
+      '서비스 기획자', '프로젝트 매니저', '제품 매니저', '데이터 분석가',
+      '상품 기획자', '전략 기획자', 'PO (Product Owner)'
+    ],
+    '마케팅': [
+      '디지털 마케터', '콘텐츠 마케터', '브랜드 마케터', '퍼포먼스 마케터',
+      'SNS 마케터', '그로스 해커', 'SEO 전문가'
+    ],
+    '영업/제휴': [
+      'B2B 영업', 'B2C 영업', '해외 영업', '제휴 담당자',
+      '영업 관리자', '기술 영업', '솔루션 영업'
+    ],
+    '경영지원': [
+      '인사 담당자', '총무 담당자', '재무 담당자', '회계 담당자',
+      '법무 담당자', 'IR 담당자', '경영 지원'
+    ],
+    '제조/생산': [
+      '생산 관리자', '품질 관리자', '공정 관리자', '설비 관리자',
+      '안전 관리자', '생산 기술자', '제조 엔지니어'
+    ],
+    '교육': [
+      '강사', '교육 기획자', '교육 운영자', '콘텐츠 개발자',
+      '커리큘럼 개발자', '온라인 강사', '교육 컨설턴트'
+    ],
+    '의료/바이오': [
+      '임상 연구원', '바이오 연구원', '제약 연구원', '의료 기기 연구원',
+      '간호사', '의료 코디네이터', 'CRA (임상연구관리자)'
+    ],
+    '금융': [
+      '자산 관리사', '재무 설계사', '금융 상품 개발자', '리스크 매니저',
+      '투자 분석가', '회계사', '세무사', '애널리스트'
+    ]
+  }
 
   const companies = [
     { name: '네이버', id: 'naver' },
@@ -109,12 +146,18 @@ function generateMockJobs(): Job[] {
 
   const jobs: Job[] = []
 
-  for (let i = 0; i < 65; i++) {
+  for (let i = 0; i < 0; i++) {
     const company = companies[i % companies.length]
     const industry = industries[i % industries.length]
     const skills = skillsByIndustry[industry] || []
     const selectedSkills = skills.slice(0, 3 + (i % 3))
-    const title = jobTitles[i % jobTitles.length]
+
+    // 업종에 맞는 직무 선택
+    const industryJobs = jobsByIndustry[industry] || []
+    const title = industryJobs.length > 0
+      ? industryJobs[i % industryJobs.length]
+      : '일반 직원'
+
     const location = locations[i % locations.length]
     const workType = workTypes[i % workTypes.length]
 
@@ -131,6 +174,14 @@ function generateMockJobs(): Job[] {
 
     const idNum = (i + 1).toString().padStart(3, '0')
 
+    const expMin = i % 6
+    const expMax = expMin + (i % 3) + 2
+
+    // 구직 사이트 URL 생성 (시뮬레이션)
+    const jobSites = ['saramin.co.kr', 'jobkorea.co.kr', 'wanted.co.kr', 'incruit.com', 'jobplanet.co.kr']
+    const selectedSite = jobSites[i % jobSites.length]
+    const sourceUrl = `https://www.${selectedSite}/job/${idNum}`
+
     jobs.push({
       id: `job-${idNum}`,
       title: title,
@@ -138,6 +189,7 @@ function generateMockJobs(): Job[] {
       companyId: company.id,
       location: location,
       salary: { min: salaryMin, max: salaryMax },
+      experience: { min: expMin, max: expMax },
       workType: workType,
       description: `${company.name}에서 ${title}을(를) 모집합니다. ${industry} 분야에서 함께 성장할 인재를 찾습니다. 우리 회사는 최고의 복지와 성장 기회를 제공합니다.`,
       requirements: [
@@ -147,10 +199,22 @@ function generateMockJobs(): Job[] {
         '팀워크 및 협업 능력',
         i % 3 === 0 ? '영어 능통자 우대' : '빠른 학습 능력'
       ],
+      preferredQualifications: [
+        i % 2 === 0 ? '해외 프로젝트 경험' : '대규모 프로젝트 리딩 경험',
+        i % 3 === 0 ? '석사 이상 학위 소지자' : '관련 자격증 보유자',
+        '오픈소스 기여 경험'
+      ],
       skills: selectedSkills,
+      keywords: [
+        i % 2 === 0 ? '연봉협상가능' : '복지우수',
+        i % 3 === 0 ? '연차자유' : '워라벨',
+        i % 4 === 0 ? '재택근무' : '유연근무',
+        i % 5 === 0 ? '스톡옵션' : '성과급'
+      ],
       industry: industry,
       postedAt: postedDate.toISOString(),
-      deadline: deadlineDate.toISOString()
+      deadline: deadlineDate.toISOString(),
+      sourceUrl: sourceUrl
     })
   }
 

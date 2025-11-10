@@ -2,22 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useAuth } from '@/contexts/AuthContext'
 import { mockJobs, type Job } from '@/lib/mockData'
-import { getJobs } from '@/lib/jobsApi'
-import { useJobSave } from '@/hooks/useJobSave'
+import { addSearchKeyword } from '@/lib/userPreferences'
 import { Search, MapPin, Bookmark, BookmarkCheck } from 'lucide-react'
 import Header from '@/components/Header'
 import JobDetailModal from '@/components/JobDetailModal'
-import { trackPageView, trackSearch, trackJobView } from '@/lib/services/behavior-tracking-service'
-
-// USE_API 환경 변수 확인
-const USE_API = process.env.NEXT_PUBLIC_USE_API === 'true'
 
 export default function SearchPage() {
-  const { user } = useAuth()
-  const { savedJobs, isSaved, toggleSave } = useJobSave()
-
+  const [savedJobs, setSavedJobs] = useState<string[]>([])
   const [keyword, setKeyword] = useState('')
   const [location, setLocation] = useState('')
   const [minSalary, setMinSalary] = useState('')
@@ -27,118 +19,97 @@ export default function SearchPage() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(false)
 
-  // 페이지 조회 추적
+  // 저장된 공고 및 이전 검색 불러오기
   useEffect(() => {
-    if (user?.id) {
-      trackPageView(user.id, '/search')
+    const saved = localStorage.getItem('jobai_saved_jobs')
+    if (saved) {
+      setSavedJobs(JSON.parse(saved))
     }
-  }, [user])
 
-  // 검색 추적
-  useEffect(() => {
-    if (user?.id && (keyword || location || minSalary || remoteType !== 'all')) {
-      trackSearch(user.id, keyword, {
-        location,
-        minSalary: minSalary ? parseInt(minSalary) : undefined,
-        remoteType: remoteType !== 'all' ? remoteType : undefined
-      })
+    // 이전 검색 필터 복원
+    const lastSearch = localStorage.getItem('jobai_last_search')
+    if (lastSearch) {
+      const search = JSON.parse(lastSearch)
+      setKeyword(search.keyword || '')
+      setLocation(search.location || '')
+      setMinSalary(search.minSalary || '')
+      setRemoteType(search.remoteType || 'all')
     }
-  }, [user, keyword, location, minSalary, remoteType])
+  }, [])
+
+  // 공고 저장/해제
+  const toggleSave = (jobId: string) => {
+    setSavedJobs(prev => {
+      const newSaved = prev.includes(jobId)
+        ? prev.filter(id => id !== jobId)
+        : [...prev, jobId]
+      localStorage.setItem('jobai_saved_jobs', JSON.stringify(newSaved))
+      return newSaved
+    })
+  }
+
+  const isSaved = (jobId: string) => savedJobs.includes(jobId)
+
+  // 검색 필터 저장
+  const saveSearchFilters = () => {
+    const filters = { keyword, location, minSalary, remoteType }
+    localStorage.setItem('jobai_last_search', JSON.stringify(filters))
+
+    // 검색 키워드 히스토리에 추가
+    if (keyword) {
+      addSearchKeyword(keyword)
+    }
+  }
 
   // 데이터 가져오기
   useEffect(() => {
     const fetchJobs = async () => {
-      if (!USE_API) {
-        // Mock 데이터 사용 - 클라이언트 측 필터링
-        let results = [...mockJobs]
+      // 검색 필터 저장
+      saveSearchFilters()
 
-        // 키워드 검색
-        if (keyword) {
-          results = results.filter(
-            job =>
-              job.title.toLowerCase().includes(keyword.toLowerCase()) ||
-              job.description.toLowerCase().includes(keyword.toLowerCase()) ||
-              job.company.toLowerCase().includes(keyword.toLowerCase()) ||
-              job.skills.some(s => s.toLowerCase().includes(keyword.toLowerCase()))
-          )
-        }
-
-        // 지역 필터
-        if (location) {
-          results = results.filter(job =>
-            job.location.toLowerCase().includes(location.toLowerCase())
-          )
-        }
-
-        // 최소 연봉 필터
-        if (minSalary) {
-          const min = parseInt(minSalary)
-          results = results.filter(job => job.salary.min >= min)
-        }
-
-        // 근무 형태 필터
-        if (remoteType !== 'all') {
-          results = results.filter(job => job.workType === remoteType)
-        }
-
-        // 정렬
-        if (sortBy === 'latest') {
-          results.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime())
-        } else if (sortBy === 'salary') {
-          results.sort((a, b) => b.salary.max - a.salary.max)
-        }
-
-        setJobs(results)
-        return
-      }
-
-      // 실제 API 사용
       setLoading(true)
-      try {
-        const filters: any = {}
 
-        if (location) filters.location = location
-        if (keyword) filters.search = keyword
-        if (minSalary) filters.salaryMin = parseInt(minSalary)
-        if (remoteType !== 'all') filters.type = remoteType
+      // Mock 데이터 사용 - 클라이언트 측 필터링
+      let results = [...mockJobs]
 
-        const data = await getJobs(filters) as any
-
-        // API 데이터를 Mock 형식으로 변환
-        const transformedJobs: Job[] = (data || []).map((job: any) => ({
-          id: job.id,
-          title: job.title,
-          company: job.company_profiles?.company_name || '회사명 없음',
-          companyId: job.company_id,
-          location: job.location,
-          salary: {
-            min: job.salary_min || 0,
-            max: job.salary_max || 0
-          },
-          workType: job.type || 'onsite',
-          description: job.description || '',
-          requirements: job.requirements || [],
-          skills: job.skills_required || [],
-          industry: job.industry || '기타',
-          postedAt: job.created_at,
-          deadline: job.deadline
-        }))
-
-        // 정렬 적용
-        if (sortBy === 'latest') {
-          transformedJobs.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime())
-        } else if (sortBy === 'salary') {
-          transformedJobs.sort((a, b) => b.salary.max - a.salary.max)
-        }
-
-        setJobs(transformedJobs)
-      } catch (error) {
-        console.error('Failed to fetch jobs:', error)
-        // 에러 시 Mock 데이터 폴백
-        setJobs(mockJobs)
-      } finally {
-        setLoading(false)
+      // 키워드 검색
+      if (keyword) {
+        results = results.filter(
+          job =>
+            job.title.toLowerCase().includes(keyword.toLowerCase()) ||
+            job.description.toLowerCase().includes(keyword.toLowerCase()) ||
+            job.company.toLowerCase().includes(keyword.toLowerCase()) ||
+            job.skills.some(s => s.toLowerCase().includes(keyword.toLowerCase()))
+        )
       }
+
+      // 지역 필터
+      if (location) {
+        results = results.filter(job =>
+          job.location.toLowerCase().includes(location.toLowerCase())
+        )
+      }
+
+      // 최소 연봉 필터
+      if (minSalary) {
+        const min = parseInt(minSalary)
+        results = results.filter(job => job.salary.min >= min)
+      }
+
+      // 근무 형태 필터
+      if (remoteType !== 'all') {
+        results = results.filter(job => job.workType === remoteType)
+      }
+
+      // 정렬
+      if (sortBy === 'latest') {
+        results.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime())
+      } else if (sortBy === 'salary') {
+        results.sort((a, b) => b.salary.max - a.salary.max)
+      }
+
+      setJobs(results)
+      setLoading(false)
     }
 
     fetchJobs()
@@ -266,13 +237,7 @@ export default function SearchPage() {
                 key={job.id}
                 className="bg-white rounded-lg shadow hover:shadow-md transition-all duration-300 hover:-translate-y-1 p-6 animate-fade-in-up cursor-pointer"
                 style={{ animationDelay: `${index * 0.05}s` }}
-                onClick={() => {
-                  setSelectedJob(job)
-                  // 공고 조회 추적
-                  if (user?.id) {
-                    trackJobView(user.id, job.id, job.title, job.company)
-                  }
-                }}
+                onClick={() => setSelectedJob(job)}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -327,35 +292,27 @@ export default function SearchPage() {
                   </div>
 
                   <div className="ml-4 flex flex-col space-y-2">
-                    {user && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          toggleSave(job.id)
-                        }}
-                        className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-                        title={isSaved(job.id) ? '저장 취소' : '저장'}
-                      >
-                        {isSaved(job.id) ? (
-                          <BookmarkCheck size={20} className="text-blue-600" />
-                        ) : (
-                          <Bookmark size={20} className="text-gray-400" />
-                        )}
-                      </button>
-                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleSave(job.id)
+                      }}
+                      className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                      title={isSaved(job.id) ? '저장 취소' : '저장'}
+                    >
+                      {isSaved(job.id) ? (
+                        <BookmarkCheck size={20} className="text-blue-600" />
+                      ) : (
+                        <Bookmark size={20} className="text-gray-400" />
+                      )}
+                    </button>
 
                     <Link
                       href={`/apply/${job.id}`}
+                      onClick={(e) => e.stopPropagation()}
                       className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 text-center whitespace-nowrap"
                     >
                       지원하기
-                    </Link>
-
-                    <Link
-                      href={`/jobs/${job.id}`}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50 text-center whitespace-nowrap"
-                    >
-                      상세보기
                     </Link>
                   </div>
                 </div>
@@ -364,20 +321,6 @@ export default function SearchPage() {
           )}
         </div>
 
-        {/* 하단 안내 */}
-        {!user && (
-          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-            <p className="text-blue-800 mb-2">
-              로그인하면 공고를 저장하고 지원할 수 있습니다.
-            </p>
-            <Link
-              href="/login"
-              className="inline-block px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700"
-            >
-              로그인하기
-            </Link>
-          </div>
-        )}
       </div>
 
       {/* 상세 모달 */}
