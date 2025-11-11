@@ -10,6 +10,7 @@ import Header from '@/components/Header'
 import SiteSelector from '@/components/SiteSelector'
 import CrawlProgressBar from '@/components/CrawlProgressBar'
 import JobCard from '@/components/JobCard'
+import NaturalLanguageSearch from '@/components/NaturalLanguageSearch'
 import { Settings, Building2, Bookmark, Search, Filter, Trash2 } from 'lucide-react'
 
 interface RecommendedJob extends Job {
@@ -119,6 +120,20 @@ export default function HomePage() {
   const [filterBenefits, setFilterBenefits] = useState<string[]>([]) // 다중 선택
   const [sortOption, setSortOption] = useState<string>('latest')
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+
+  // AI 모드 및 자연어 검색
+  const [aiMode, setAiMode] = useState(false)
+  const [naturalLanguageQuery, setNaturalLanguageQuery] = useState('')
+  const [parsedSearchFilters, setParsedSearchFilters] = useState<{
+    skills?: string[]
+    location?: string
+    workType?: string
+    experienceMin?: number
+    experienceMax?: number
+    salaryMin?: number
+    salaryMax?: number
+    keywords?: string[]
+  } | null>(null)
 
   // 우선순위 조정
   const [priorityList, setPriorityList] = useState<string[]>([])
@@ -402,6 +417,33 @@ export default function HomePage() {
     setPriorityList([])
     setExperienceDescription('')
     setExtractedKeywords([])
+    setNaturalLanguageQuery('')
+    setParsedSearchFilters(null)
+  }
+
+  // 자연어 검색 핸들러
+  const handleNaturalLanguageSearch = (query: string, filters: any) => {
+    setNaturalLanguageQuery(query)
+    setParsedSearchFilters(filters)
+
+    // 파싱된 필터를 기존 필터 상태에 적용
+    if (filters.location) {
+      setFilterLocation(filters.location)
+    }
+    if (filters.workType) {
+      setFilterEmploymentType(filters.workType)
+    }
+    if (filters.skills && filters.skills.length > 0) {
+      setFilterTechStack(filters.skills)
+    }
+    if (filters.keywords && filters.keywords.length > 0) {
+      setSearchKeyword(filters.keywords.join(' '))
+    }
+  }
+
+  // AI 모드 토글
+  const toggleAiMode = () => {
+    setAiMode(prev => !prev)
   }
 
   // LLM을 사용한 키워드 추출
@@ -626,6 +668,13 @@ export default function HomePage() {
                 totalJobs={filteredJobs.length}
               />
             )}
+
+            {/* 자연어 검색 */}
+            <NaturalLanguageSearch
+              onSearch={handleNaturalLanguageSearch}
+              aiMode={aiMode}
+              onToggleAiMode={toggleAiMode}
+            />
 
               {/* 검색 필터 */}
               <div className="border-t border-gray-200 pt-4">
