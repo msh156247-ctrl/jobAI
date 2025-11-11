@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { mockJobs, getCompanyById, type Job } from '@/lib/mockData'
 import { getUserPreferences, hasPreferences } from '@/lib/userPreferences'
 import { getMergedJobs, initAutoCrawl, getCrawlMetadata, crawlSingleSite, clearAllCrawledData, createCrawlParamsFromPreferences } from '@/lib/jobCrawler'
@@ -99,6 +100,9 @@ const priorityOptions = [
 ]
 
 export default function HomePage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
   const [preferences, setPreferences] = useState(getUserPreferences())
   const [savedJobs, setSavedJobs] = useState<string[]>([])
   const [jobs, setJobs] = useState<RecommendedJob[]>([])
@@ -150,6 +154,72 @@ export default function HomePage() {
     progress: number
     isActive: boolean
   } | null>(null)
+
+  // URL 파라미터로 필터 동기화
+  const updateURLParams = () => {
+    const params = new URLSearchParams()
+
+    if (searchKeyword) params.set('q', searchKeyword)
+    if (filterLocation) params.set('location', filterLocation)
+    if (filterSalary) params.set('salary', filterSalary)
+    if (filterExperience) params.set('experience', filterExperience)
+    if (filterEmploymentType) params.set('workType', filterEmploymentType)
+    if (selectedIndustry) params.set('industry', selectedIndustry)
+    if (selectedSubIndustry) params.set('subIndustry', selectedSubIndustry)
+    if (filterTechStack.length > 0) params.set('skills', filterTechStack.join(','))
+    if (filterBenefits.length > 0) params.set('benefits', filterBenefits.join(','))
+    if (sortOption !== 'latest') params.set('sort', sortOption)
+    if (aiMode) params.set('aiMode', 'true')
+
+    const newURL = params.toString() ? `?${params.toString()}` : window.location.pathname
+    router.replace(newURL, { scroll: false })
+  }
+
+  // URL 파라미터에서 필터 로드 (초기 로드 시)
+  useEffect(() => {
+    if (!searchParams) return
+
+    const q = searchParams.get('q')
+    const location = searchParams.get('location')
+    const salary = searchParams.get('salary')
+    const experience = searchParams.get('experience')
+    const workType = searchParams.get('workType')
+    const industry = searchParams.get('industry')
+    const subIndustry = searchParams.get('subIndustry')
+    const skills = searchParams.get('skills')
+    const benefits = searchParams.get('benefits')
+    const sort = searchParams.get('sort')
+    const aiModeParam = searchParams.get('aiMode')
+
+    if (q) setSearchKeyword(q)
+    if (location) setFilterLocation(location)
+    if (salary) setFilterSalary(salary)
+    if (experience) setFilterExperience(experience)
+    if (workType) setFilterEmploymentType(workType)
+    if (industry) setSelectedIndustry(industry)
+    if (subIndustry) setSelectedSubIndustry(subIndustry)
+    if (skills) setFilterTechStack(skills.split(','))
+    if (benefits) setFilterBenefits(benefits.split(','))
+    if (sort) setSortOption(sort)
+    if (aiModeParam === 'true') setAiMode(true)
+  }, []) // 초기 로드 시에만 실행
+
+  // 필터 변경 시 URL 업데이트
+  useEffect(() => {
+    updateURLParams()
+  }, [
+    searchKeyword,
+    filterLocation,
+    filterSalary,
+    filterExperience,
+    filterEmploymentType,
+    selectedIndustry,
+    selectedSubIndustry,
+    filterTechStack,
+    filterBenefits,
+    sortOption,
+    aiMode
+  ])
 
   // 저장된 공고 불러오기 & 설정 변경 감지
   useEffect(() => {
