@@ -10,169 +10,48 @@
  * 4. 사이트 구조가 변경될 수 있으므로 정기적인 업데이트가 필요합니다
  */
 
-export interface ScraperParams {
-  keyword?: string
-  industry?: string
-  subIndustry?: string
-  location?: string
-  minSalary?: number
-  maxSalary?: number
-  minExperience?: number
-  maxExperience?: number
-  employmentType?: string
-  techStack?: string
-  benefits?: string
-  limit?: number // 크롤링할 최대 공고 수
-}
-
-export interface ScrapedJob {
-  id: string
-  title: string
-  company: string
-  companyId: string
-  location: string
-  salary: {
-    min: number
-    max: number
-  }
-  experience?: {
-    min: number
-    max: number
-  }
-  education?: string
-  employmentType?: string
-  workType: 'onsite' | 'remote' | 'dispatch'
-  description: string
-  requirements: string[]
-  skills: string[]
-  keywords?: string[]
-  industry: string
-  deadline: string
-  postedAt: string
-  sourceUrl: string
-  source: string
-  companyLogo?: string
-}
+// 타입 정의는 별도 파일에서 import (클라이언트 번들링 방지)
+export type { ScraperParams, ScrapedJob } from './types'
+import type { ScraperParams, ScrapedJob } from './types'
 
 /**
  * 사람인 스크레이퍼
  */
 export async function scrapeSaramin(params: ScraperParams): Promise<ScrapedJob[]> {
-  const jobs: ScrapedJob[] = []
-
-  try {
-    // URL 생성
-    const url = buildSaraminSearchUrl(params)
-    console.log('[Saramin] Scraping URL:', url)
-
-    // TODO: Puppeteer를 사용한 실제 크롤링
-    // 현재는 실제 구현이 필요합니다
-
-    // 예시 구현:
-    // const browser = await puppeteer.launch({ headless: true })
-    // const page = await browser.newPage()
-    // await page.goto(url)
-    //
-    // const jobElements = await page.$$('.item_recruit')
-    // for (const element of jobElements) {
-    //   const job = await extractSaraminJob(element, page)
-    //   jobs.push(job)
-    // }
-    //
-    // await browser.close()
-
-    console.log('[Saramin] Found', jobs.length, 'jobs')
-  } catch (error) {
-    console.error('[Saramin] Scraping error:', error)
-    throw error
-  }
-
-  return jobs
+  const { crawlSaramin } = await import('../crawling/saraminCrawler')
+  return crawlSaramin(params)
 }
 
 /**
  * 잡코리아 스크레이퍼
  */
 export async function scrapeJobKorea(params: ScraperParams): Promise<ScrapedJob[]> {
-  const jobs: ScrapedJob[] = []
-
-  try {
-    const url = buildJobKoreaSearchUrl(params)
-    console.log('[JobKorea] Scraping URL:', url)
-
-    // TODO: 실제 크롤링 구현
-
-    console.log('[JobKorea] Found', jobs.length, 'jobs')
-  } catch (error) {
-    console.error('[JobKorea] Scraping error:', error)
-    throw error
-  }
-
-  return jobs
+  const { crawlJobKorea } = await import('../crawling/jobkoreaCrawler')
+  return crawlJobKorea(params)
 }
 
 /**
  * 원티드 스크레이퍼
  */
 export async function scrapeWanted(params: ScraperParams): Promise<ScrapedJob[]> {
-  const jobs: ScrapedJob[] = []
-
-  try {
-    const url = buildWantedSearchUrl(params)
-    console.log('[Wanted] Scraping URL:', url)
-
-    // TODO: 실제 크롤링 구현
-    // 원티드는 GraphQL API를 사용할 수 있음
-
-    console.log('[Wanted] Found', jobs.length, 'jobs')
-  } catch (error) {
-    console.error('[Wanted] Scraping error:', error)
-    throw error
-  }
-
-  return jobs
+  const { crawlWanted } = await import('../crawling/wantedCrawler')
+  return crawlWanted(params)
 }
 
 /**
  * 인크루트 스크레이퍼
  */
 export async function scrapeIncruit(params: ScraperParams): Promise<ScrapedJob[]> {
-  const jobs: ScrapedJob[] = []
-
-  try {
-    const url = buildIncruitSearchUrl(params)
-    console.log('[Incruit] Scraping URL:', url)
-
-    // TODO: 실제 크롤링 구현
-
-    console.log('[Incruit] Found', jobs.length, 'jobs')
-  } catch (error) {
-    console.error('[Incruit] Scraping error:', error)
-    throw error
-  }
-
-  return jobs
+  const { crawlIncruit } = await import('../crawling/incruitCrawler')
+  return crawlIncruit(params)
 }
 
 /**
  * 잡플래닛 스크레이퍼
  */
 export async function scrapeJobPlanet(params: ScraperParams): Promise<ScrapedJob[]> {
-  const jobs: ScrapedJob[] = []
-
-  try {
-    const url = buildJobPlanetSearchUrl(params)
-    console.log('[JobPlanet] Scraping URL:', url)
-
-    // TODO: 실제 크롤링 구현
-
-    console.log('[JobPlanet] Found', jobs.length, 'jobs')
-  } catch (error) {
-    console.error('[JobPlanet] Scraping error:', error)
-    throw error
-  }
-
-  return jobs
+  const { crawlJobPlanet } = await import('../crawling/jobplanetCrawler')
+  return crawlJobPlanet(params)
 }
 
 // ============================================================================
@@ -358,7 +237,15 @@ export function delay(ms: number): Promise<void> {
 /**
  * 여러 사이트를 병렬로 크롤링
  */
-export async function scrapeAllSites(params: ScraperParams): Promise<ScrapedJob[]> {
+export async function scrapeAllSites(
+  params: ScraperParams,
+  options: {
+    validate?: boolean
+    removeDuplicates?: boolean
+  } = {}
+): Promise<ScrapedJob[]> {
+  const { validate = true, removeDuplicates: removeDups = true } = options
+
   const results = await Promise.allSettled([
     scrapeSaramin(params),
     scrapeJobKorea(params),
@@ -386,5 +273,30 @@ export async function scrapeAllSites(params: ScraperParams): Promise<ScrapedJob[
     console.warn('Some scrapers failed:', errors)
   }
 
-  return allJobs
+  let finalJobs = allJobs
+
+  // 중복 제거
+  if (removeDups && allJobs.length > 0) {
+    const { removeDuplicates } = await import('../crawling/validator')
+    const result = removeDuplicates(allJobs)
+    finalJobs = result.unique
+    if (result.duplicates > 0) {
+      console.log(`🔄 중복 제거: ${result.duplicates}건`)
+    }
+  }
+
+  // 검증
+  if (validate && finalJobs.length > 0) {
+    const { validateJobs, printValidationReport } = await import('../crawling/validator')
+    const report = validateJobs(finalJobs)
+    printValidationReport(report)
+
+    // 유효한 공고만 반환
+    const validJobIds = new Set(
+      report.details.filter(d => d.valid).map(d => d.jobId)
+    )
+    finalJobs = finalJobs.filter(job => validJobIds.has(job.id))
+  }
+
+  return finalJobs
 }

@@ -3,6 +3,24 @@
  * 사람인, 잡코리아, 원티드 등에서 채용 공고 수집
  */
 
+import type { ScraperParams } from './scrapers/types'
+
+export interface CrawlParams {
+  keyword?: string
+  industry?: string
+  subIndustry?: string
+  location?: string
+  minSalary?: number
+  maxSalary?: number
+  minExperience?: number
+  maxExperience?: number
+  employmentType?: string
+  workType?: string
+  techStack?: string[]
+  benefits?: string[]
+  limit?: number
+}
+
 export interface CrawledJob {
   id: string
   title: string
@@ -42,6 +60,45 @@ export interface CrawlMetadata {
 const STORAGE_KEY_JOBS = 'jobai_crawled_jobs'
 const STORAGE_KEY_METADATA = 'jobai_crawl_metadata'
 const CRAWL_INTERVAL_DAYS = 14 // 2주마다 업데이트
+
+/**
+ * CrawlParams를 ScraperParams로 변환
+ */
+function convertToScraperParams(params?: CrawlParams): ScraperParams {
+  if (!params) {
+    return { limit: 50 }
+  }
+
+  // 키워드 생성: subIndustry가 있으면 우선, 없으면 industry 사용
+  let keyword = params.keyword || ''
+  if (!keyword) {
+    if (params.subIndustry) {
+      keyword = params.subIndustry
+    } else if (params.industry) {
+      keyword = params.industry
+    }
+  }
+
+  // 기술 스택을 키워드에 추가
+  if (params.techStack && params.techStack.length > 0) {
+    keyword = keyword ? `${keyword} ${params.techStack[0]}` : params.techStack[0]
+  }
+
+  return {
+    keyword: keyword || undefined,
+    industry: params.industry,
+    subIndustry: params.subIndustry,
+    location: params.location,
+    minSalary: params.minSalary,
+    maxSalary: params.maxSalary,
+    minExperience: params.minExperience,
+    maxExperience: params.maxExperience,
+    employmentType: params.employmentType,
+    techStack: params.techStack ? params.techStack.join(',') : undefined,
+    benefits: params.benefits ? params.benefits.join(',') : undefined,
+    limit: params.limit || 50
+  }
+}
 
 // 업종별 직무 데이터
 const jobsByIndustry: Record<string, string[]> = {
@@ -292,120 +349,221 @@ export function saveCrawledJobs(jobs: CrawledJob[]): void {
 }
 
 /**
- * 사람인 크롤링 (시뮬레이션)
- * 실제 환경에서는 백엔드 API를 통해 크롤링해야 합니다
+ * 사람인 크롤링 (API 호출)
  */
-async function crawlSaramin(): Promise<CrawledJob[]> {
-  // 실제로는 백엔드 API 호출
-  // const response = await fetch('/api/crawl/saramin')
-  // return await response.json()
+async function crawlSaramin(params?: CrawlParams): Promise<CrawledJob[]> {
+  try {
+    const scraperParams = convertToScraperParams(params)
 
-  const jobs: CrawledJob[] = []
-  const industries = Object.keys(jobsByIndustry)
+    // API Route 호출 (서버 사이드 크롤링)
+    const queryParams = new URLSearchParams()
+    Object.entries(scraperParams).forEach(([key, value]) => {
+      if (value !== undefined) {
+        queryParams.append(key, String(value))
+      }
+    })
 
-  // 각 업종별로 15개씩 공고 생성 (총 150개)
-  industries.forEach((industry, industryIdx) => {
-    for (let i = 0; i < 15; i++) {
-      const id = `saramin-${String(industryIdx * 15 + i + 1).padStart(4, '0')}`
-      jobs.push(generateJob(id, 'saramin', industry, industryIdx * 15 + i))
+    const response = await fetch(`/api/crawl/saramin?${queryParams.toString()}`)
+
+    if (!response.ok) {
+      throw new Error(`API 오류: ${response.status}`)
     }
-  })
 
-  return jobs
+    const data = await response.json()
+
+    if (!data.success || !data.jobs) {
+      throw new Error(data.error || '크롤링 실패')
+    }
+
+    console.log(`✅ 사람인: ${data.jobs.length}개 공고`)
+
+    // CrawledJob 형식으로 변환
+    return data.jobs.map((job: any) => ({
+      ...job,
+      crawledAt: new Date().toISOString()
+    }))
+  } catch (error) {
+    console.error('❌ 사람인 크롤링 실패:', error)
+
+    // 실패 시 시뮬레이션 데이터 반환 (개발용)
+    console.log('⚠️ 시뮬레이션 데이터 사용')
+    const jobs: CrawledJob[] = []
+    const industries = params?.industry ? [params.industry] : Object.keys(jobsByIndustry)
+
+    industries.forEach((industry, industryIdx) => {
+      for (let i = 0; i < 15; i++) {
+        const id = `saramin-${String(industryIdx * 15 + i + 1).padStart(4, '0')}`
+        jobs.push(generateJob(id, 'saramin', industry, industryIdx * 15 + i))
+      }
+    })
+
+    return jobs
+  }
 }
 
 /**
- * 잡코리아 크롤링 (시뮬레이션)
+ * 잡코리아 크롤링 (API 호출)
  */
-async function crawlJobkorea(): Promise<CrawledJob[]> {
-  const jobs: CrawledJob[] = []
-  const industries = Object.keys(jobsByIndustry)
+async function crawlJobkorea(params?: CrawlParams): Promise<CrawledJob[]> {
+  try {
+    const scraperParams = convertToScraperParams(params)
+    const queryParams = new URLSearchParams()
+    Object.entries(scraperParams).forEach(([key, value]) => {
+      if (value !== undefined) queryParams.append(key, String(value))
+    })
 
-  industries.forEach((industry, industryIdx) => {
-    for (let i = 0; i < 15; i++) {
-      const id = `jobkorea-${String(industryIdx * 15 + i + 1).padStart(4, '0')}`
-      jobs.push(generateJob(id, 'jobkorea', industry, industryIdx * 15 + i + 150))
-    }
-  })
+    const response = await fetch(`/api/crawl/jobkorea?${queryParams.toString()}`)
+    if (!response.ok) throw new Error(`API 오류: ${response.status}`)
 
-  return jobs
+    const data = await response.json()
+    if (!data.success || !data.jobs) throw new Error(data.error || '크롤링 실패')
+
+    console.log(`✅ 잡코리아: ${data.jobs.length}개 공고`)
+    return data.jobs.map((job: any) => ({ ...job, crawledAt: new Date().toISOString() }))
+  } catch (error) {
+    console.error('❌ 잡코리아 크롤링 실패:', error)
+    console.log('⚠️ 시뮬레이션 데이터 사용')
+    const jobs: CrawledJob[] = []
+    const industries = params?.industry ? [params.industry] : Object.keys(jobsByIndustry)
+    industries.forEach((industry, industryIdx) => {
+      for (let i = 0; i < 15; i++) {
+        const id = `jobkorea-${String(industryIdx * 15 + i + 1).padStart(4, '0')}`
+        jobs.push(generateJob(id, 'jobkorea', industry, industryIdx * 15 + i + 150))
+      }
+    })
+    return jobs
+  }
 }
 
 /**
- * 원티드 크롤링 (시뮬레이션)
+ * 원티드 크롤링 (API 호출)
  */
-async function crawlWanted(): Promise<CrawledJob[]> {
-  const jobs: CrawledJob[] = []
-  const industries = Object.keys(jobsByIndustry)
+async function crawlWanted(params?: CrawlParams): Promise<CrawledJob[]> {
+  try {
+    const scraperParams = convertToScraperParams(params)
+    const queryParams = new URLSearchParams()
+    Object.entries(scraperParams).forEach(([key, value]) => {
+      if (value !== undefined) queryParams.append(key, String(value))
+    })
 
-  industries.forEach((industry, industryIdx) => {
-    for (let i = 0; i < 15; i++) {
-      const id = `wanted-${String(industryIdx * 15 + i + 1).padStart(4, '0')}`
-      jobs.push(generateJob(id, 'wanted', industry, industryIdx * 15 + i + 300))
-    }
-  })
+    const response = await fetch(`/api/crawl/wanted?${queryParams.toString()}`)
+    if (!response.ok) throw new Error(`API 오류: ${response.status}`)
 
-  return jobs
+    const data = await response.json()
+    if (!data.success || !data.jobs) throw new Error(data.error || '크롤링 실패')
+
+    console.log(`✅ 원티드: ${data.jobs.length}개 공고`)
+    return data.jobs.map((job: any) => ({ ...job, crawledAt: new Date().toISOString() }))
+  } catch (error) {
+    console.error('❌ 원티드 크롤링 실패:', error)
+    console.log('⚠️ 시뮬레이션 데이터 사용')
+    const jobs: CrawledJob[] = []
+    const industries = params?.industry ? [params.industry] : Object.keys(jobsByIndustry)
+    industries.forEach((industry, industryIdx) => {
+      for (let i = 0; i < 15; i++) {
+        const id = `wanted-${String(industryIdx * 15 + i + 1).padStart(4, '0')}`
+        jobs.push(generateJob(id, 'wanted', industry, industryIdx * 15 + i + 300))
+      }
+    })
+    return jobs
+  }
 }
 
 /**
- * 인크루트 크롤링 (시뮬레이션)
+ * 인크루트 크롤링 (API 호출)
  */
-async function crawlIncruit(): Promise<CrawledJob[]> {
-  const jobs: CrawledJob[] = []
-  const industries = Object.keys(jobsByIndustry)
+async function crawlIncruit(params?: CrawlParams): Promise<CrawledJob[]> {
+  try {
+    const scraperParams = convertToScraperParams(params)
+    const queryParams = new URLSearchParams()
+    Object.entries(scraperParams).forEach(([key, value]) => {
+      if (value !== undefined) queryParams.append(key, String(value))
+    })
 
-  industries.forEach((industry, industryIdx) => {
-    for (let i = 0; i < 15; i++) {
-      const id = `incruit-${String(industryIdx * 15 + i + 1).padStart(4, '0')}`
-      jobs.push(generateJob(id, 'incruit', industry, industryIdx * 15 + i + 450))
-    }
-  })
+    const response = await fetch(`/api/crawl/incruit?${queryParams.toString()}`)
+    if (!response.ok) throw new Error(`API 오류: ${response.status}`)
 
-  return jobs
+    const data = await response.json()
+    if (!data.success || !data.jobs) throw new Error(data.error || '크롤링 실패')
+
+    console.log(`✅ 인크루트: ${data.jobs.length}개 공고`)
+    return data.jobs.map((job: any) => ({ ...job, crawledAt: new Date().toISOString() }))
+  } catch (error) {
+    console.error('❌ 인크루트 크롤링 실패:', error)
+    console.log('⚠️ 시뮬레이션 데이터 사용')
+    const jobs: CrawledJob[] = []
+    const industries = params?.industry ? [params.industry] : Object.keys(jobsByIndustry)
+    industries.forEach((industry, industryIdx) => {
+      for (let i = 0; i < 15; i++) {
+        const id = `incruit-${String(industryIdx * 15 + i + 1).padStart(4, '0')}`
+        jobs.push(generateJob(id, 'incruit', industry, industryIdx * 15 + i + 450))
+      }
+    })
+    return jobs
+  }
 }
 
 /**
- * 잡플래닛 크롤링 (시뮬레이션)
+ * 잡플래닛 크롤링 (API 호출)
  */
-async function crawlJobplanet(): Promise<CrawledJob[]> {
-  const jobs: CrawledJob[] = []
-  const industries = Object.keys(jobsByIndustry)
+async function crawlJobplanet(params?: CrawlParams): Promise<CrawledJob[]> {
+  try {
+    const scraperParams = convertToScraperParams(params)
+    const queryParams = new URLSearchParams()
+    Object.entries(scraperParams).forEach(([key, value]) => {
+      if (value !== undefined) queryParams.append(key, String(value))
+    })
 
-  industries.forEach((industry, industryIdx) => {
-    for (let i = 0; i < 15; i++) {
-      const id = `jobplanet-${String(industryIdx * 15 + i + 1).padStart(4, '0')}`
-      jobs.push(generateJob(id, 'jobplanet', industry, industryIdx * 15 + i + 600))
-    }
-  })
+    const response = await fetch(`/api/crawl/jobplanet?${queryParams.toString()}`)
+    if (!response.ok) throw new Error(`API 오류: ${response.status}`)
 
-  return jobs
+    const data = await response.json()
+    if (!data.success || !data.jobs) throw new Error(data.error || '크롤링 실패')
+
+    console.log(`✅ 잡플래닛: ${data.jobs.length}개 공고`)
+    return data.jobs.map((job: any) => ({ ...job, crawledAt: new Date().toISOString() }))
+  } catch (error) {
+    console.error('❌ 잡플래닛 크롤링 실패:', error)
+    console.log('⚠️ 시뮬레이션 데이터 사용')
+    const jobs: CrawledJob[] = []
+    const industries = params?.industry ? [params.industry] : Object.keys(jobsByIndustry)
+    industries.forEach((industry, industryIdx) => {
+      for (let i = 0; i < 15; i++) {
+        const id = `jobplanet-${String(industryIdx * 15 + i + 1).padStart(4, '0')}`
+        jobs.push(generateJob(id, 'jobplanet', industry, industryIdx * 15 + i + 600))
+      }
+    })
+    return jobs
+  }
 }
 
 /**
  * 특정 사이트만 크롤링
  */
-export async function crawlSingleSite(siteName: string): Promise<CrawledJob[]> {
-  console.log(`${siteName} 크롤링 시작...`)
+export async function crawlSingleSite(
+  siteName: string,
+  params?: CrawlParams
+): Promise<CrawledJob[]> {
+  console.log(`${siteName} 크롤링 시작...`, params ? `파라미터: ${JSON.stringify(params)}` : '')
 
   try {
     let newJobs: CrawledJob[] = []
 
     switch (siteName) {
       case '사람인':
-        newJobs = await crawlSaramin()
+        newJobs = await crawlSaramin(params)
         break
       case '잡코리아':
-        newJobs = await crawlJobkorea()
+        newJobs = await crawlJobkorea(params)
         break
       case '원티드':
-        newJobs = await crawlWanted()
+        newJobs = await crawlWanted(params)
         break
       case '인크루트':
-        newJobs = await crawlIncruit()
+        newJobs = await crawlIncruit(params)
         break
       case '잡플래닛':
-        newJobs = await crawlJobplanet()
+        newJobs = await crawlJobplanet(params)
         break
       default:
         console.error(`알 수 없는 사이트: ${siteName}`)
@@ -456,16 +614,16 @@ export function clearAllCrawledData() {
 /**
  * 모든 사이트 크롤링 실행
  */
-export async function crawlAllSites(): Promise<CrawledJob[]> {
-  console.log('크롤링 시작...')
+export async function crawlAllSites(params?: CrawlParams): Promise<CrawledJob[]> {
+  console.log('크롤링 시작...', params ? `파라미터: ${JSON.stringify(params)}` : '')
 
   try {
     const results = await Promise.all([
-      crawlSaramin(),
-      crawlJobkorea(),
-      crawlWanted(),
-      crawlIncruit(),
-      crawlJobplanet()
+      crawlSaramin(params),
+      crawlJobkorea(params),
+      crawlWanted(params),
+      crawlIncruit(params),
+      crawlJobplanet(params)
     ])
 
     const allJobs = results.flat()
@@ -536,4 +694,23 @@ export function getMergedJobs(mockJobs: any[]): any[] {
 
   // Mock 데이터와 크롤링 데이터 통합
   return [...convertedCrawledJobs, ...mockJobs]
+}
+
+/**
+ * 사용자 선호도에서 크롤링 파라미터 생성
+ */
+export function createCrawlParamsFromPreferences(preferences: any): CrawlParams {
+  return {
+    industry: preferences.industry,
+    subIndustry: preferences.subIndustry,
+    location: preferences.location,
+    minSalary: preferences.minSalary,
+    maxSalary: preferences.maxSalary,
+    minExperience: preferences.minExperience,
+    maxExperience: preferences.maxExperience,
+    workType: preferences.workType,
+    techStack: preferences.techStack || [],
+    benefits: preferences.benefits || [],
+    limit: 50
+  }
 }
