@@ -3,11 +3,14 @@
 import { useState, useEffect } from 'react'
 import { mockJobs, getCompanyById, type Job } from '@/lib/mockData'
 import { getUserPreferences, hasPreferences } from '@/lib/userPreferences'
-import { getMergedJobs, initAutoCrawl, getCrawlMetadata, crawlSingleSite, clearAllCrawledData } from '@/lib/jobCrawler'
+import { getMergedJobs, initAutoCrawl, getCrawlMetadata, crawlSingleSite, clearAllCrawledData, createCrawlParamsFromPreferences } from '@/lib/jobCrawler'
 import { trackBookmark, removeBookmark, trackApply } from '@/lib/jobStats'
 import Link from 'next/link'
 import Header from '@/components/Header'
-import { Bookmark, BookmarkCheck, MapPin, Briefcase, Settings, TrendingUp, Users, Building2, RefreshCw, Calendar, Search, Filter, Trash2 } from 'lucide-react'
+import SiteSelector from '@/components/SiteSelector'
+import CrawlProgressBar from '@/components/CrawlProgressBar'
+import JobCard from '@/components/JobCard'
+import { Settings, Building2, Bookmark, Search, Filter, Trash2 } from 'lucide-react'
 
 interface RecommendedJob extends Job {
   matchScore: number
@@ -492,8 +495,12 @@ export default function HomePage() {
     }, 200)
 
     try {
+      // 사용자 선호도에서 크롤링 파라미터 생성
+      const crawlParams = createCrawlParamsFromPreferences(preferences)
+      console.log('크롤링 파라미터:', crawlParams)
+
       // 실제 크롤링 실행
-      await crawlSingleSite(siteName)
+      await crawlSingleSite(siteName, crawlParams)
 
       // 진행률 100%로 설정
       clearInterval(progressInterval)
@@ -604,77 +611,21 @@ export default function HomePage() {
         {currentTab === 'jobs' && (
           <>
             {/* 구직 사이트 크롤링 버튼 */}
-            <div className="mb-6 bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">채용 공고 가져오기</h3>
-              <p className="text-sm text-gray-600 mb-4">구직 사이트에서 최신 채용 공고를 가져옵니다</p>
+            <SiteSelector
+              onCrawl={handleManualCrawl}
+              isDisabled={crawlingStatus?.isActive || false}
+              activeSite={crawlingStatus?.site}
+            />
 
-              <div className="flex flex-wrap gap-3 mb-4">
-                <button
-                  onClick={() => handleManualCrawl('사람인')}
-                  disabled={crawlingStatus?.isActive}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  <RefreshCw size={16} className={crawlingStatus?.site === '사람인' && crawlingStatus?.isActive ? 'animate-spin' : ''} />
-                  사람인
-                </button>
-                <button
-                  onClick={() => handleManualCrawl('잡코리아')}
-                  disabled={crawlingStatus?.isActive}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  <RefreshCw size={16} className={crawlingStatus?.site === '잡코리아' && crawlingStatus?.isActive ? 'animate-spin' : ''} />
-                  잡코리아
-                </button>
-                <button
-                  onClick={() => handleManualCrawl('원티드')}
-                  disabled={crawlingStatus?.isActive}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  <RefreshCw size={16} className={crawlingStatus?.site === '원티드' && crawlingStatus?.isActive ? 'animate-spin' : ''} />
-                  원티드
-                </button>
-                <button
-                  onClick={() => handleManualCrawl('인크루트')}
-                  disabled={crawlingStatus?.isActive}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  <RefreshCw size={16} className={crawlingStatus?.site === '인크루트' && crawlingStatus?.isActive ? 'animate-spin' : ''} />
-                  인크루트
-                </button>
-                <button
-                  onClick={() => handleManualCrawl('잡플래닛')}
-                  disabled={crawlingStatus?.isActive}
-                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  <RefreshCw size={16} className={crawlingStatus?.site === '잡플래닛' && crawlingStatus?.isActive ? 'animate-spin' : ''} />
-                  잡플래닛
-                </button>
-              </div>
-
-              {/* 크롤링 진행 상태 */}
-              {crawlingStatus && (
-                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-blue-900">
-                      {crawlingStatus.site}에서 공고 가져오는 중...
-                    </span>
-                    <span className="text-sm font-bold text-blue-700">
-                      {crawlingStatus.progress}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-blue-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${crawlingStatus.progress}%` }}
-                    ></div>
-                  </div>
-                  {crawlingStatus.progress === 100 && (
-                    <p className="text-xs text-green-700 mt-2 flex items-center gap-1">
-                      <span className="text-green-600">✓</span> 완료! {filteredJobs.length}개의 공고를 확인하세요.
-                    </p>
-                  )}
-                </div>
-              )}
+            {/* 크롤링 진행 상태 */}
+            {crawlingStatus && (
+              <CrawlProgressBar
+                site={crawlingStatus.site}
+                progress={crawlingStatus.progress}
+                isActive={crawlingStatus.isActive}
+                totalJobs={filteredJobs.length}
+              />
+            )}
 
               {/* 검색 필터 */}
               <div className="border-t border-gray-200 pt-4">
@@ -1028,161 +979,17 @@ export default function HomePage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-4">
-                {filteredJobs.map((job, index) => {
-                  const company = getCompanyById(job.companyId)
-
-                  return (
-                    <div
-                      key={job.id}
-                      className="bg-white shadow rounded-lg p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-fade-in-up cursor-pointer"
-                      style={{ animationDelay: `${index * 0.05}s` }}
-                      onClick={() => {
-                        if (job.sourceUrl) {
-                          const source = getSourceSiteName(job.sourceUrl) || 'unknown'
-                          trackApply(job.id, source)
-                          window.open(job.sourceUrl, '_blank')
-                        }
-                      }}
-                    >
-                      {/* 출처 사이트 표시 - 최상단 */}
-                      {getSourceSiteName(job.sourceUrl) && (
-                        <div className="flex items-center mb-2">
-                          <span className={`text-xs px-2 py-1 rounded border ${getSourceSiteBadgeColor(getSourceSiteName(job.sourceUrl))}`}>
-                            {getSourceSiteName(job.sourceUrl)}
-                          </span>
-                        </div>
-                      )}
-
-                      <p className="text-gray-600 hover:text-blue-600 mb-1 font-medium">
-                        {job.company}
-                      </p>
-
-                      <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-3 mb-2">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-1">
-                            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 hover:text-blue-600 transition-colors">
-                              {job.title}
-                            </h3>
-                            {hasPreferences() && (
-                              <span className={`px-3 py-1 rounded-full text-xs sm:text-sm font-medium w-fit ${
-                                job.matchScore >= 80 ? 'bg-green-100 text-green-800' :
-                                job.matchScore >= 60 ? 'bg-blue-100 text-blue-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                매칭도 {job.matchScore}%
-                              </span>
-                            )}
-                          </div>
-
-                          {/* 채용 내용 */}
-                          <p className="text-sm text-gray-700 mb-2 line-clamp-2">{job.description}</p>
-
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                            <span className="flex items-center gap-1">
-                              <Calendar size={12} />
-                              작성일: {new Date(job.postedAt).toLocaleDateString('ko-KR')}
-                            </span>
-                            <span className="flex items-center gap-1 text-red-600 font-medium">
-                              <Calendar size={12} />
-                              마감일: {new Date(job.deadline).toLocaleDateString('ko-KR')}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500 mb-3">
-                        <span className="flex items-center gap-1">
-                          <MapPin size={16} />
-                          {job.location}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="font-semibold">₩</span>
-                          {job.salary.min.toLocaleString()}만 - {job.salary.max.toLocaleString()}만원
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Briefcase size={16} />
-                          {getWorkTypeLabel(job.workType)}
-                        </span>
-                        {job.experience && (
-                          <span className="flex items-center gap-1 text-orange-600 font-medium">
-                            경력 {job.experience.min === 0 ? '신입' : `${job.experience.min}년`} ~ {job.experience.max}년
-                          </span>
-                        )}
-                      </div>
-
-                      {/* 추천 사유 */}
-                      {hasPreferences() && job.matchReasons.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {job.matchReasons.map((reason, idx) => (
-                            <span key={idx} className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
-                              ✓ {reason}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* 스킬 태그 */}
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {job.skills.slice(0, 5).map((skill, idx) => (
-                          <span key={idx} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-
-                      {/* 직장 키워드 */}
-                      {job.keywords && job.keywords.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {job.keywords.map((keyword, idx) => (
-                            <span key={idx} className="bg-green-50 text-green-700 px-2 py-1 rounded text-xs">
-                              {keyword}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* 액션 버튼 - 하단 */}
-                      <div className="flex gap-2 pt-3 border-t border-gray-100">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            toggleSave(job.id, job.sourceUrl)
-                          }}
-                          className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 flex-1 ${
-                            isSaved(job.id) ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-teal-100 text-teal-700 hover:bg-teal-200'
-                          }`}
-                          title={isSaved(job.id) ? '즐겨찾기 해제' : '즐겨찾기'}
-                        >
-                          {isSaved(job.id) ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
-                          <span className="text-sm font-medium">{isSaved(job.id) ? '저장됨' : '즐겨찾기'}</span>
-                        </button>
-                        {job.sourceUrl ? (
-                          <a
-                            href={job.sourceUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              const source = getSourceSiteName(job.sourceUrl) || 'unknown'
-                              trackApply(job.id, source)
-                            }}
-                            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-center text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex-1 flex items-center justify-center"
-                          >
-                            지원하기
-                          </a>
-                        ) : (
-                          <Link
-                            href={`/apply/${job.id}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-center text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex-1 flex items-center justify-center"
-                          >
-                            지원하기
-                          </Link>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
+                {filteredJobs.map((job, index) => (
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    isSaved={isSaved(job.id)}
+                    onToggleSave={toggleSave}
+                    onApply={trackApply}
+                    showPreferences={hasPreferences()}
+                    index={index}
+                  />
+                ))}
               </div>
             )}
 
@@ -1217,141 +1024,15 @@ export default function HomePage() {
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-4">
                 {savedJobsList.map((job, index) => (
-                  <div
+                  <JobCard
                     key={job.id}
-                    className="bg-white shadow rounded-lg p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer"
-                    onClick={() => {
-                      if (job.sourceUrl) {
-                        const source = getSourceSiteName(job.sourceUrl) || 'unknown'
-                        trackApply(job.id, source)
-                        window.open(job.sourceUrl, '_blank')
-                      }
-                    }}
-                  >
-                    {/* 출처 사이트 표시 - 최상단 */}
-                    {getSourceSiteName(job.sourceUrl) && (
-                      <div className="flex items-center mb-2">
-                        <span className={`text-xs px-2 py-1 rounded border ${getSourceSiteBadgeColor(getSourceSiteName(job.sourceUrl))}`}>
-                          {getSourceSiteName(job.sourceUrl)}
-                        </span>
-                      </div>
-                    )}
-
-                    <p className="text-gray-600 hover:text-blue-600 mb-1 font-medium">
-                      {job.company}
-                    </p>
-
-                    <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-3 mb-2">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
-                          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 hover:text-blue-600 transition-colors">
-                            {job.title}
-                          </h3>
-                          {hasPreferences() && (
-                            <span className={`px-3 py-1 rounded-full text-xs sm:text-sm font-medium w-fit ${
-                              job.matchScore >= 80 ? 'bg-green-100 text-green-800' :
-                              job.matchScore >= 60 ? 'bg-blue-100 text-blue-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              매칭도 {job.matchScore}%
-                            </span>
-                          )}
-                        </div>
-
-                        {/* 채용 내용 */}
-                        <p className="text-sm text-gray-700 mb-2 line-clamp-2">{job.description}</p>
-
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <Calendar size={12} />
-                            작성일: {new Date(job.postedAt).toLocaleDateString('ko-KR')}
-                          </span>
-                          <span className="flex items-center gap-1 text-red-600 font-medium">
-                            <Calendar size={12} />
-                            마감일: {new Date(job.deadline).toLocaleDateString('ko-KR')}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500 mb-3">
-                      <span className="flex items-center gap-1">
-                        <MapPin size={16} />
-                        {job.location}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="font-semibold">₩</span>
-                        {job.salary.min.toLocaleString()}만 - {job.salary.max.toLocaleString()}만원
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Briefcase size={16} />
-                        {getWorkTypeLabel(job.workType)}
-                      </span>
-                      {job.experience && (
-                        <span className="flex items-center gap-1 text-orange-600 font-medium">
-                          경력 {job.experience.min === 0 ? '신입' : `${job.experience.min}년`} ~ {job.experience.max}년
-                        </span>
-                      )}
-                    </div>
-
-                    {/* 스킬 태그 */}
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {job.skills.slice(0, 5).map((skill, idx) => (
-                        <span key={idx} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* 직장 키워드 */}
-                    {job.keywords && job.keywords.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {job.keywords.map((keyword, idx) => (
-                          <span key={idx} className="bg-green-50 text-green-700 px-2 py-1 rounded text-xs">
-                            {keyword}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* 액션 버튼 - 하단 */}
-                    <div className="flex gap-2 pt-3 border-t border-gray-100">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          toggleSave(job.id, job.sourceUrl)
-                        }}
-                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-all duration-200 hover:scale-105 active:scale-95 flex-1"
-                        title="즐겨찾기 해제"
-                      >
-                        <BookmarkCheck size={18} />
-                        <span className="text-sm font-medium">저장됨</span>
-                      </button>
-                      {job.sourceUrl ? (
-                        <a
-                          href={job.sourceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            const source = getSourceSiteName(job.sourceUrl) || 'unknown'
-                            trackApply(job.id, source)
-                          }}
-                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-center text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex-1 flex items-center justify-center"
-                        >
-                          지원하기
-                        </a>
-                      ) : (
-                        <Link
-                          href={`/apply/${job.id}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-center text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex-1 flex items-center justify-center"
-                        >
-                          지원하기
-                        </Link>
-                      )}
-                    </div>
-                  </div>
+                    job={job}
+                    isSaved={true}
+                    onToggleSave={toggleSave}
+                    onApply={trackApply}
+                    showPreferences={hasPreferences()}
+                    index={index}
+                  />
                 ))}
               </div>
             )}
