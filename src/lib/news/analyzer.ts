@@ -57,13 +57,20 @@ export function generateCompanyReports(articles: NewsArticle[]): CompanyNewsRepo
       투자: 0,
       기술: 0,
       리스크: 0,
-      정책: 0
+      정책: 0,
+      혁신: 0,
+      글로벌: 0,
+      규제: 0,
+      환경: 0,
+      사회적가치: 0
     }
 
     for (const article of companyArticles) {
       if (article.issueType) {
         for (const issue of article.issueType) {
-          issueDistribution[issue]++
+          if (issue in issueDistribution) {
+            issueDistribution[issue as keyof typeof issueDistribution]++
+          }
         }
       }
     }
@@ -145,7 +152,12 @@ export function calculateIssuePercentage(distribution: CompanyNewsReport['issueD
       투자: 0,
       기술: 0,
       리스크: 0,
-      정책: 0
+      정책: 0,
+      혁신: 0,
+      글로벌: 0,
+      규제: 0,
+      환경: 0,
+      사회적가치: 0
     }
   }
 
@@ -154,7 +166,12 @@ export function calculateIssuePercentage(distribution: CompanyNewsReport['issueD
     투자: Math.round((distribution.투자 / total) * 100),
     기술: Math.round((distribution.기술 / total) * 100),
     리스크: Math.round((distribution.리스크 / total) * 100),
-    정책: Math.round((distribution.정책 / total) * 100)
+    정책: Math.round((distribution.정책 / total) * 100),
+    혁신: Math.round((distribution.혁신 / total) * 100),
+    글로벌: Math.round((distribution.글로벌 / total) * 100),
+    규제: Math.round((distribution.규제 / total) * 100),
+    환경: Math.round((distribution.환경 / total) * 100),
+    사회적가치: Math.round((distribution.사회적가치 / total) * 100)
   }
 }
 

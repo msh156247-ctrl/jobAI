@@ -24,6 +24,16 @@ export default function CompanyReport({ report, onClick }: CompanyReportProps) {
         return 'bg-red-500'
       case '정책':
         return 'bg-orange-500'
+      case '혁신':
+        return 'bg-pink-500'
+      case '글로벌':
+        return 'bg-indigo-500'
+      case '규제':
+        return 'bg-yellow-600'
+      case '환경':
+        return 'bg-emerald-500'
+      case '사회적가치':
+        return 'bg-teal-500'
       default:
         return 'bg-gray-500'
     }
@@ -41,6 +51,16 @@ export default function CompanyReport({ report, onClick }: CompanyReportProps) {
         return 'text-red-700'
       case '정책':
         return 'text-orange-700'
+      case '혁신':
+        return 'text-pink-700'
+      case '글로벌':
+        return 'text-indigo-700'
+      case '규제':
+        return 'text-yellow-700'
+      case '환경':
+        return 'text-emerald-700'
+      case '사회적가치':
+        return 'text-teal-700'
       default:
         return 'text-gray-700'
     }

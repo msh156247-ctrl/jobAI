@@ -409,6 +409,258 @@ export async function crawlBloter(params: NewsScraperParams): Promise<NewsArticl
 }
 
 /**
+ * 한겨레 크롤러 (정치, 사회)
+ */
+export async function crawlHankyoreh(params: NewsScraperParams): Promise<NewsArticle[]> {
+  const mockArticles: NewsArticle[] = [
+    {
+      id: `hankyoreh-${Date.now()}-1`,
+      title: '정부, 탄소중립 2030 로드맵 발표',
+      content: '정부가 2030년 탄소중립 달성을 위한 구체적인 로드맵을 발표했다. 환경부는 재생에너지 확대, 전기차 보급 확대, 탄소배출권 거래제 강화 등을 핵심 과제로 제시했다. 이번 계획으로 2030년까지 온실가스 배출량을 40% 감축할 계획이다.',
+      url: 'https://hani.co.kr/arti/20251112000001',
+      source: '한겨레',
+      publishedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: '환경'
+    },
+    {
+      id: `hankyoreh-${Date.now()}-2`,
+      title: '교육부, 대학 정원 확대 방안 논의',
+      content: '교육부가 저출산 시대 대학 정원 조정 방안을 논의 중이다. 전문가들은 지역 균형 발전과 산업 수요를 고려한 정원 조정이 필요하다고 지적했다. 교육부는 다음 달 구체적인 방안을 발표할 예정이다.',
+      url: 'https://hani.co.kr/arti/20251112000002',
+      source: '한겨레',
+      publishedAt: new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: '교육'
+    }
+  ]
+
+  return mockArticles.map(article => {
+    const company = detectCompany(article.title + ' ' + article.content)
+    const issueType = analyzeIssueTypes(article.title + ' ' + article.content)
+    return {
+      ...article,
+      company: company || undefined,
+      issueType
+    }
+  }).filter(article => {
+    if (params.company && article.company !== params.company) return false
+    if (params.keyword && !article.title.includes(params.keyword) && !article.content.includes(params.keyword)) return false
+    return true
+  })
+}
+
+/**
+ * 조선일보 크롤러 (경제, 국제)
+ */
+export async function crawlChosun(params: NewsScraperParams): Promise<NewsArticle[]> {
+  const mockArticles: NewsArticle[] = [
+    {
+      id: `chosun-${Date.now()}-1`,
+      title: '미국 연준, 금리 동결 결정',
+      content: '미국 연방준비제도가 기준금리를 동결하기로 결정했다. 연준 의장은 인플레이션 추세를 지켜본 후 금리 인하를 검토하겠다고 밝혔다. 이번 결정으로 글로벌 금융시장의 불확실성이 계속될 전망이다.',
+      url: 'https://chosun.com/article/20251112000001',
+      source: '조선일보',
+      publishedAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: '국제'
+    },
+    {
+      id: `chosun-${Date.now()}-2`,
+      title: '부동산 시장, 정부 규제 강화에도 상승세',
+      content: '정부의 강력한 부동산 규제에도 불구하고 수도권 아파트 가격이 상승세를 이어가고 있다. 전문가들은 공급 부족과 저금리 기조가 가격 상승의 주요 원인이라고 분석했다. 정부는 추가 규제 방안을 검토 중이다.',
+      url: 'https://chosun.com/article/20251112000002',
+      source: '조선일보',
+      publishedAt: new Date(Date.now() - 13 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: '부동산'
+    }
+  ]
+
+  return mockArticles.map(article => {
+    const company = detectCompany(article.title + ' ' + article.content)
+    const issueType = analyzeIssueTypes(article.title + ' ' + article.content)
+    return {
+      ...article,
+      company: company || undefined,
+      issueType
+    }
+  }).filter(article => {
+    if (params.company && article.company !== params.company) return false
+    if (params.keyword && !article.title.includes(params.keyword) && !article.content.includes(params.keyword)) return false
+    return true
+  })
+}
+
+/**
+ * 중앙일보 크롤러 (문화, 교육)
+ */
+export async function crawlJoongang(params: NewsScraperParams): Promise<NewsArticle[]> {
+  const mockArticles: NewsArticle[] = [
+    {
+      id: `joongang-${Date.now()}-1`,
+      title: 'K-팝 BTS, 그래미 어워드 3개 부문 후보',
+      content: 'BTS가 올해 그래미 어워드 3개 부문 후보에 올랐다. 빌보드는 BTS가 최고 팝 듀오 부문에서 수상 가능성이 높다고 전망했다. 팬들은 소셜미디어를 통해 응원 메시지를 보내고 있다.',
+      url: 'https://joongang.joins.com/article/20251112000001',
+      source: '중앙일보',
+      publishedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: '문화'
+    },
+    {
+      id: `joongang-${Date.now()}-2`,
+      title: '대학 입시, AI 활용 확대 논란',
+      content: '대학 입시에서 AI를 활용한 자기소개서 작성이 논란이 되고 있다. 교육 전문가들은 공정성 문제를 우려하며 명확한 가이드라인이 필요하다고 주장했다. 대교협은 AI 활용 지침을 마련 중이다.',
+      url: 'https://joongang.joins.com/article/20251112000002',
+      source: '중앙일보',
+      publishedAt: new Date(Date.now() - 17 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: '교육'
+    }
+  ]
+
+  return mockArticles.map(article => {
+    const company = detectCompany(article.title + ' ' + article.content)
+    const issueType = analyzeIssueTypes(article.title + ' ' + article.content)
+    return {
+      ...article,
+      company: company || undefined,
+      issueType
+    }
+  }).filter(article => {
+    if (params.company && article.company !== params.company) return false
+    if (params.keyword && !article.title.includes(params.keyword) && !article.content.includes(params.keyword)) return false
+    return true
+  })
+}
+
+/**
+ * 연합뉴스 크롤러 (종합)
+ */
+export async function crawlYonhap(params: NewsScraperParams): Promise<NewsArticle[]> {
+  const mockArticles: NewsArticle[] = [
+    {
+      id: `yonhap-${Date.now()}-1`,
+      title: '국회, 반도체 지원법 통과',
+      content: '국회가 반도체 산업 경쟁력 강화를 위한 지원법을 통과시켰다. 이번 법안은 반도체 기업에 대한 세제 혜택 확대와 R&D 지원 강화를 담고 있다. 업계는 글로벌 경쟁력 제고에 도움이 될 것으로 기대하고 있다.',
+      url: 'https://yna.co.kr/view/AKR20251112000001',
+      source: '연합뉴스',
+      publishedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: '정책/규제'
+    },
+    {
+      id: `yonhap-${Date.now()}-2`,
+      title: '한국 경제성장률 3% 전망',
+      content: '한국은행이 올해 경제성장률 전망치를 3%로 상향 조정했다. 수출 호조와 내수 회복세가 주요 원인으로 분석됐다. 한은 관계자는 하반기에도 성장세가 이어질 것으로 예상했다.',
+      url: 'https://yna.co.kr/view/AKR20251112000002',
+      source: '연합뉴스',
+      publishedAt: new Date(Date.now() - 19 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: '경제/비즈니스'
+    }
+  ]
+
+  return mockArticles.map(article => {
+    const company = detectCompany(article.title + ' ' + article.content)
+    const issueType = analyzeIssueTypes(article.title + ' ' + article.content)
+    return {
+      ...article,
+      company: company || undefined,
+      issueType
+    }
+  }).filter(article => {
+    if (params.company && article.company !== params.company) return false
+    if (params.keyword && !article.title.includes(params.keyword) && !article.content.includes(params.keyword)) return false
+    return true
+  })
+}
+
+/**
+ * SBS뉴스 크롤러 (사회, 환경)
+ */
+export async function crawlSBS(params: NewsScraperParams): Promise<NewsArticle[]> {
+  const mockArticles: NewsArticle[] = [
+    {
+      id: `sbs-${Date.now()}-1`,
+      title: '미세먼지 농도 '나쁨' 수준, 외출 자제 권고',
+      content: '서울과 경기 지역의 미세먼지 농도가 나쁨 수준을 기록했다. 환경부는 노약자와 어린이의 외출을 자제하고 마스크 착용을 권고했다. 대기질은 내일 오후부터 점차 개선될 전망이다.',
+      url: 'https://news.sbs.co.kr/news/20251112000001',
+      source: 'SBS뉴스',
+      publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: '환경'
+    },
+    {
+      id: `sbs-${Date.now()}-2`,
+      title: '청년 주거 지원 정책 확대',
+      content: '정부가 청년 주거 지원 정책을 대폭 확대한다. 청년 전용 주택 공급을 늘리고 임대료 지원 대상도 확대할 계획이다. 국토부는 내년까지 청년 주택 5만 가구를 추가 공급할 예정이다.',
+      url: 'https://news.sbs.co.kr/news/20251112000002',
+      source: 'SBS뉴스',
+      publishedAt: new Date(Date.now() - 21 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: '사회'
+    }
+  ]
+
+  return mockArticles.map(article => {
+    const company = detectCompany(article.title + ' ' + article.content)
+    const issueType = analyzeIssueTypes(article.title + ' ' + article.content)
+    return {
+      ...article,
+      company: company || undefined,
+      issueType
+    }
+  }).filter(article => {
+    if (params.company && article.company !== params.company) return false
+    if (params.keyword && !article.title.includes(params.keyword) && !article.content.includes(params.keyword)) return false
+    return true
+  })
+}
+
+/**
+ * MBC뉴스 크롤러 (정치, 금융)
+ */
+export async function crawlMBC(params: NewsScraperParams): Promise<NewsArticle[]> {
+  const mockArticles: NewsArticle[] = [
+    {
+      id: `mbc-${Date.now()}-1`,
+      title: '금융위, 가상자산 규제 강화 방침',
+      content: '금융위원회가 가상자산 거래소에 대한 규제를 강화하기로 했다. 투자자 보호를 위해 거래소 등록 요건을 강화하고 불법 행위에 대한 처벌을 강화할 계획이다. 업계는 과도한 규제를 우려하고 있다.',
+      url: 'https://imnews.imbc.com/news/20251112000001',
+      source: 'MBC뉴스',
+      publishedAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: '금융'
+    },
+    {
+      id: `mbc-${Date.now()}-2`,
+      title: '국회, 근로시간 단축 법안 계류',
+      content: '주 52시간제를 더 단축하는 법안이 국회에 계류 중이다. 노동계는 근로시간 단축이 필요하다고 주장하는 반면, 경영계는 생산성 저하를 우려하고 있다. 법안 통과 여부는 불투명한 상황이다.',
+      url: 'https://imnews.imbc.com/news/20251112000002',
+      source: 'MBC뉴스',
+      publishedAt: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: '정치'
+    }
+  ]
+
+  return mockArticles.map(article => {
+    const company = detectCompany(article.title + ' ' + article.content)
+    const issueType = analyzeIssueTypes(article.title + ' ' + article.content)
+    return {
+      ...article,
+      company: company || undefined,
+      issueType
+    }
+  }).filter(article => {
+    if (params.company && article.company !== params.company) return false
+    if (params.keyword && !article.title.includes(params.keyword) && !article.content.includes(params.keyword)) return false
+    return true
+  })
+}
+
+/**
  * 모든 뉴스 사이트에서 크롤링
  */
 export async function crawlAllNews(params: NewsScraperParams): Promise<NewsArticle[]> {
@@ -421,7 +673,13 @@ export async function crawlAllNews(params: NewsScraperParams): Promise<NewsArtic
     crawlMaeil(params),
     crawlITChosun(params),
     crawlDigitalTimes(params),
-    crawlBloter(params)
+    crawlBloter(params),
+    crawlHankyoreh(params),
+    crawlChosun(params),
+    crawlJoongang(params),
+    crawlYonhap(params),
+    crawlSBS(params),
+    crawlMBC(params)
   ])
 
   const allArticles = results.flat()

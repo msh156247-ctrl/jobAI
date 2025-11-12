@@ -76,8 +76,8 @@ export default function NewsTab() {
   })
 
   const companyNames = getAllCompanyNames()
-  const sources = ['ZDNet', '서울경제', '전자신문', '아시아경제', '한국경제', '매일경제', 'IT조선', '디지털타임스', '블로터']
-  const issueTypes = ['채용', '투자', '기술', '리스크', '정책']
+  const sources = ['ZDNet', '서울경제', '전자신문', '아시아경제', '한국경제', '매일경제', 'IT조선', '디지털타임스', '블로터', '한겨레', '조선일보', '중앙일보', '연합뉴스', 'SBS뉴스', 'MBC뉴스']
+  const issueTypes = ['채용', '투자', '기술', '리스크', '정책', '혁신', '글로벌', '규제', '환경', '사회적가치']
 
   return (
     <div>
