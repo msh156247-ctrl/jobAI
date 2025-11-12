@@ -11,7 +11,7 @@ import { getAllCompanyNames } from '@/lib/news/companyDictionary'
 export default function NewsTab() {
   const [articles, setArticles] = useState<NewsArticle[]>([])
   const [companyReports, setCompanyReports] = useState<CompanyNewsReport[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
   // 필터
@@ -21,10 +21,7 @@ export default function NewsTab() {
   const [selectedIssueType, setSelectedIssueType] = useState('')
   const [showCompanyReports, setShowCompanyReports] = useState(true)
 
-  // 초기 로드
-  useEffect(() => {
-    loadNews()
-  }, [])
+  // 초기 로드 제거 - 사용자가 새로고침 버튼을 클릭해야 뉴스 로드
 
   const loadNews = async () => {
     setLoading(true)
@@ -79,7 +76,7 @@ export default function NewsTab() {
   })
 
   const companyNames = getAllCompanyNames()
-  const sources = ['ZDNet', '서울경제', '전자신문']
+  const sources = ['ZDNet', '서울경제', '전자신문', '아시아경제', '한국경제', '매일경제', 'IT조선', '디지털타임스', '블로터']
   const issueTypes = ['채용', '투자', '기술', '리스크', '정책']
 
   return (

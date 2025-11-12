@@ -157,13 +157,271 @@ export async function crawlETNews(params: NewsScraperParams): Promise<NewsArticl
 }
 
 /**
+ * 아시아경제 크롤러
+ */
+export async function crawlAsiaEconomy(params: NewsScraperParams): Promise<NewsArticle[]> {
+  const mockArticles: NewsArticle[] = [
+    {
+      id: `asia-${Date.now()}-1`,
+      title: '네이버, 글로벌 AI 시장 진출 가속화',
+      content: '네이버가 글로벌 AI 시장 공략에 본격 나섰다. 네이버는 미국, 일본, 동남아시아 등에서 하이퍼클로바X 기반 AI 솔루션을 출시하며 시장 확대를 추진 중이다. 업계 관계자는 "네이버의 AI 기술력이 글로벌 시장에서도 통할 것"이라고 전망했다.',
+      url: 'https://asiae.co.kr/article/20251112000001',
+      source: '아시아경제',
+      publishedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: 'IT/기술'
+    },
+    {
+      id: `asia-${Date.now()}-2`,
+      title: '업스테이지, AI 스타트업 중 최대 규모 투자 유치',
+      content: '국내 AI 스타트업 업스테이지가 3000억 원 규모의 시리즈 C 투자를 유치했다. 이번 투자로 업스테이지는 글로벌 AI 시장에서 경쟁력을 강화하고, 신규 인력 200명을 채용할 계획이다.',
+      url: 'https://asiae.co.kr/article/20251112000002',
+      source: '아시아경제',
+      publishedAt: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: '투자/M&A'
+    }
+  ]
+
+  return mockArticles.map(article => {
+    const company = detectCompany(article.title + ' ' + article.content)
+    const issueType = analyzeIssueTypes(article.title + ' ' + article.content)
+    return {
+      ...article,
+      company: company || undefined,
+      issueType
+    }
+  }).filter(article => {
+    if (params.company && article.company !== params.company) return false
+    if (params.keyword && !article.title.includes(params.keyword) && !article.content.includes(params.keyword)) return false
+    return true
+  })
+}
+
+/**
+ * 한국경제 크롤러
+ */
+export async function crawlHankyung(params: NewsScraperParams): Promise<NewsArticle[]> {
+  const mockArticles: NewsArticle[] = [
+    {
+      id: `hankyung-${Date.now()}-1`,
+      title: '당근마켓, 지역 커뮤니티 플랫폼 강화',
+      content: '당근마켓이 지역 커뮤니티 기능을 대폭 강화한다. 회사는 동네 모임, 지역 소식 등 커뮤니티 중심 서비스를 확대하며 MAU 2000만 달성을 목표로 하고 있다. 당근마켓은 이를 위해 커뮤니티 운영 인력 100명을 추가 채용할 예정이다.',
+      url: 'https://hankyung.com/article/20251112000001',
+      source: '한국경제',
+      publishedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: 'IT/기술'
+    },
+    {
+      id: `hankyung-${Date.now()}-2`,
+      title: 'SK텔레콤, 5G 가입자 1500만 돌파',
+      content: 'SK텔레콤이 5G 가입자 1500만 명을 돌파하며 국내 1위 통신사 입지를 공고히 했다. SK텔레콤은 5G 네트워크 품질 향상과 AI 기반 맞춤형 서비스 강화로 가입자 증가세를 이어갈 계획이다.',
+      url: 'https://hankyung.com/article/20251112000002',
+      source: '한국경제',
+      publishedAt: new Date(Date.now() - 15 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: '경제/비즈니스'
+    }
+  ]
+
+  return mockArticles.map(article => {
+    const company = detectCompany(article.title + ' ' + article.content)
+    const issueType = analyzeIssueTypes(article.title + ' ' + article.content)
+    return {
+      ...article,
+      company: company || undefined,
+      issueType
+    }
+  }).filter(article => {
+    if (params.company && article.company !== params.company) return false
+    if (params.keyword && !article.title.includes(params.keyword) && !article.content.includes(params.keyword)) return false
+    return true
+  })
+}
+
+/**
+ * 매일경제 크롤러
+ */
+export async function crawlMaeil(params: NewsScraperParams): Promise<NewsArticle[]> {
+  const mockArticles: NewsArticle[] = [
+    {
+      id: `maeil-${Date.now()}-1`,
+      title: '넷마블, 신작 게임 3종 동시 출시',
+      content: '넷마블이 상반기 신작 게임 3종을 동시 출시하며 시장 공략에 나선다. 회사는 RPG, 액션, 캐주얼 장르의 게임을 선보이며 글로벌 시장 점유율 확대를 목표로 하고 있다. 넷마블은 게임 개발 인력 300명을 추가 채용 중이다.',
+      url: 'https://mk.co.kr/news/20251112000001',
+      source: '매일경제',
+      publishedAt: new Date(Date.now() - 9 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: 'IT/기술'
+    },
+    {
+      id: `maeil-${Date.now()}-2`,
+      title: '하이브, 글로벌 엔터 시장 1위 등극',
+      content: '하이브가 글로벌 엔터테인먼트 기업 시가총액 1위에 올랐다. 방탄소년단, 세븐틴 등 소속 아티스트들의 활약과 플랫폼 사업 확대가 주효했다. 하이브는 올해 매출 2조 원 달성을 목표로 하고 있다.',
+      url: 'https://mk.co.kr/news/20251112000002',
+      source: '매일경제',
+      publishedAt: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: '경제/비즈니스'
+    }
+  ]
+
+  return mockArticles.map(article => {
+    const company = detectCompany(article.title + ' ' + article.content)
+    const issueType = analyzeIssueTypes(article.title + ' ' + article.content)
+    return {
+      ...article,
+      company: company || undefined,
+      issueType
+    }
+  }).filter(article => {
+    if (params.company && article.company !== params.company) return false
+    if (params.keyword && !article.title.includes(params.keyword) && !article.content.includes(params.keyword)) return false
+    return true
+  })
+}
+
+/**
+ * IT조선 크롤러
+ */
+export async function crawlITChosun(params: NewsScraperParams): Promise<NewsArticle[]> {
+  const mockArticles: NewsArticle[] = [
+    {
+      id: `itchosun-${Date.now()}-1`,
+      title: '카카오뱅크, 디지털 금융 혁신상 수상',
+      content: '카카오뱅크가 디지털 금융 혁신 대상을 수상했다. 심사위원단은 카카오뱅크의 편리한 UX와 AI 기반 금융 서비스를 높이 평가했다. 카카오뱅크는 올해 예금 고객 2000만 명 돌파를 목표로 하고 있다.',
+      url: 'https://it.chosun.com/article/20251112000001',
+      source: 'IT조선',
+      publishedAt: new Date(Date.now() - 11 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: 'IT/기술'
+    },
+    {
+      id: `itchosun-${Date.now()}-2`,
+      title: '무신사, 패션 플랫폼 1위 입지 강화',
+      content: '무신사가 국내 패션 플랫폼 시장 점유율 1위를 유지하고 있다. 무신사는 독점 브랜드 유치와 물류 인프라 확충으로 경쟁력을 강화하며, 하반기 해외 진출도 검토 중이다. 회사는 이를 위해 글로벌 사업 인력 50명을 채용할 계획이다.',
+      url: 'https://it.chosun.com/article/20251112000002',
+      source: 'IT조선',
+      publishedAt: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: 'IT/기술'
+    }
+  ]
+
+  return mockArticles.map(article => {
+    const company = detectCompany(article.title + ' ' + article.content)
+    const issueType = analyzeIssueTypes(article.title + ' ' + article.content)
+    return {
+      ...article,
+      company: company || undefined,
+      issueType
+    }
+  }).filter(article => {
+    if (params.company && article.company !== params.company) return false
+    if (params.keyword && !article.title.includes(params.keyword) && !article.content.includes(params.keyword)) return false
+    return true
+  })
+}
+
+/**
+ * 디지털타임스 크롤러
+ */
+export async function crawlDigitalTimes(params: NewsScraperParams): Promise<NewsArticle[]> {
+  const mockArticles: NewsArticle[] = [
+    {
+      id: `dt-${Date.now()}-1`,
+      title: '크래프톤, PUBG 신규 모드 출시로 매출 반등',
+      content: '크래프톤이 PUBG 신규 게임 모드를 출시하며 매출 반등에 성공했다. 새로운 배틀로얄 모드와 협동 플레이 시스템이 유저들의 호평을 받으며 동시 접속자 수가 30% 증가했다. 크래프톤은 후속작 개발을 위해 게임 기획자 80명을 채용 중이다.',
+      url: 'https://dt.co.kr/article/20251112000001',
+      source: '디지털타임스',
+      publishedAt: new Date(Date.now() - 14 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: 'IT/기술'
+    },
+    {
+      id: `dt-${Date.now()}-2`,
+      title: '야놀자, 해외 여행 예약 플랫폼 인수',
+      content: '야놀자가 동남아시아 최대 여행 예약 플랫폼을 인수하며 글로벌 시장 진출을 본격화한다. 이번 인수로 야놀자는 아시아 최대 여행 플랫폼으로 자리매김할 전망이다. 회사는 글로벌 서비스 확대를 위해 개발 인력 150명을 채용할 계획이다.',
+      url: 'https://dt.co.kr/article/20251112000002',
+      source: '디지털타임스',
+      publishedAt: new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: '투자/M&A'
+    }
+  ]
+
+  return mockArticles.map(article => {
+    const company = detectCompany(article.title + ' ' + article.content)
+    const issueType = analyzeIssueTypes(article.title + ' ' + article.content)
+    return {
+      ...article,
+      company: company || undefined,
+      issueType
+    }
+  }).filter(article => {
+    if (params.company && article.company !== params.company) return false
+    if (params.keyword && !article.title.includes(params.keyword) && !article.content.includes(params.keyword)) return false
+    return true
+  })
+}
+
+/**
+ * 블로터 크롤러
+ */
+export async function crawlBloter(params: NewsScraperParams): Promise<NewsArticle[]> {
+  const mockArticles: NewsArticle[] = [
+    {
+      id: `bloter-${Date.now()}-1`,
+      title: '센드버드, 글로벌 메시징 API 시장 점유율 확대',
+      content: '센드버드가 글로벌 메시징 API 시장에서 점유율을 확대하고 있다. 회사는 미국, 유럽 기업들을 대상으로 SaaS 기반 메시징 솔루션을 제공하며 ARR 500억 원을 달성했다. 센드버드는 글로벌 영업 인력 30명을 추가 채용할 예정이다.',
+      url: 'https://bloter.net/article/20251112000001',
+      source: '블로터',
+      publishedAt: new Date(Date.now() - 16 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: 'IT/기술'
+    },
+    {
+      id: `bloter-${Date.now()}-2`,
+      title: '직방, AI 기반 부동산 추천 서비스 고도화',
+      content: '직방이 AI 기반 부동산 추천 알고리즘을 고도화하며 사용자 경험을 개선했다. 새로운 AI 시스템은 사용자의 선호도와 예산을 분석해 최적의 매물을 추천한다. 직방은 AI 개발 인력 확충을 위해 머신러닝 엔지니어 40명을 채용 중이다.',
+      url: 'https://bloter.net/article/20251112000002',
+      source: '블로터',
+      publishedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      scrapedAt: new Date().toISOString(),
+      category: 'IT/기술'
+    }
+  ]
+
+  return mockArticles.map(article => {
+    const company = detectCompany(article.title + ' ' + article.content)
+    const issueType = analyzeIssueTypes(article.title + ' ' + article.content)
+    return {
+      ...article,
+      company: company || undefined,
+      issueType
+    }
+  }).filter(article => {
+    if (params.company && article.company !== params.company) return false
+    if (params.keyword && !article.title.includes(params.keyword) && !article.content.includes(params.keyword)) return false
+    return true
+  })
+}
+
+/**
  * 모든 뉴스 사이트에서 크롤링
  */
 export async function crawlAllNews(params: NewsScraperParams): Promise<NewsArticle[]> {
   const results = await Promise.all([
     crawlZDNet(params),
     crawlSeoulEconomy(params),
-    crawlETNews(params)
+    crawlETNews(params),
+    crawlAsiaEconomy(params),
+    crawlHankyung(params),
+    crawlMaeil(params),
+    crawlITChosun(params),
+    crawlDigitalTimes(params),
+    crawlBloter(params)
   ])
 
   const allArticles = results.flat()
@@ -178,7 +436,7 @@ export async function crawlAllNews(params: NewsScraperParams): Promise<NewsArtic
     new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
   )
 
-  // limit 적용
+  // limit 적용 (작성일 필터 없이 모든 기사 포함)
   if (params.limit) {
     return uniqueArticles.slice(0, params.limit)
   }
