@@ -8,11 +8,11 @@ import { ScraperParams } from '@/lib/scrapers'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { site: string } }
+  { params }: { params: Promise<{ site: string }> }
 ) {
   try {
     const { searchParams } = new URL(request.url)
-    const site = params.site
+    const { site } = await params
 
     // URL 파라미터에서 검색 조건 추출
     const scraperParams: ScraperParams = {
@@ -85,11 +85,12 @@ export async function GET(
 
   } catch (error: any) {
     console.error('[API] 크롤링 실패:', error)
+    const { site } = await params
     return NextResponse.json(
       {
         success: false,
         error: error.message || '크롤링 중 오류가 발생했습니다',
-        site: params.site
+        site
       },
       { status: 500 }
     )

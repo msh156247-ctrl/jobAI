@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { mockJobs, getCompanyById, type Job } from '@/lib/mockData'
 import { getUserPreferences, hasPreferences } from '@/lib/userPreferences'
@@ -100,7 +100,7 @@ const priorityOptions = [
   { id: 'industry', label: '업종' },
 ]
 
-export default function HomePage() {
+function HomePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -1176,5 +1176,17 @@ export default function HomePage() {
       </main>
 
     </div>
+  )
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <HomePage />
+    </Suspense>
   )
 }

@@ -583,7 +583,7 @@ export async function crawlSBS(params: NewsScraperParams): Promise<NewsArticle[]
   const mockArticles: NewsArticle[] = [
     {
       id: `sbs-${Date.now()}-1`,
-      title: '미세먼지 농도 '나쁨' 수준, 외출 자제 권고',
+      title: "미세먼지 농도 '나쁨' 수준, 외출 자제 권고",
       content: '서울과 경기 지역의 미세먼지 농도가 나쁨 수준을 기록했다. 환경부는 노약자와 어린이의 외출을 자제하고 마스크 착용을 권고했다. 대기질은 내일 오후부터 점차 개선될 전망이다.',
       url: 'https://news.sbs.co.kr/news/20251112000001',
       source: 'SBS뉴스',

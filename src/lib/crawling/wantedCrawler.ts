@@ -33,7 +33,7 @@ export async function crawlWanted(params: ScraperParams): Promise<ScrapedJob[]> 
     })
 
     // 원티드는 SPA이므로 조금 더 대기
-    await page.waitForTimeout(2000)
+    await new Promise(resolve => setTimeout(resolve, 2000))
 
     // 공고 목록 대기 (원티드의 여러 가능한 셀렉터)
     const possibleSelectors = [
