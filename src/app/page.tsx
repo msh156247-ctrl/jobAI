@@ -12,14 +12,15 @@ import SiteSelector from '@/components/SiteSelector'
 import CrawlProgressBar from '@/components/CrawlProgressBar'
 import JobCard from '@/components/JobCard'
 import NaturalLanguageSearch from '@/components/NaturalLanguageSearch'
-import { Settings, Building2, Bookmark, Search, Filter, Trash2 } from 'lucide-react'
+import NewsTab from '@/components/NewsTab'
+import { Settings, Building2, Bookmark, Search, Filter, Trash2, Newspaper } from 'lucide-react'
 
 interface RecommendedJob extends Job {
   matchScore: number
   matchReasons: string[]
 }
 
-type ViewTab = 'jobs' | 'jobseeker' | 'saved'
+type ViewTab = 'jobs' | 'jobseeker' | 'saved' | 'news'
 
 // 업종 카테고리
 const industryCategories = {
@@ -716,6 +717,17 @@ export default function HomePage() {
               <Bookmark size={20} />
               저장한 공고 ({savedJobsList.length})
             </button>
+            <button
+              onClick={() => setCurrentTab('news')}
+              className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors whitespace-nowrap ${
+                currentTab === 'news'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Newspaper size={20} />
+              기업 뉴스
+            </button>
           </div>
         </div>
 
@@ -1156,6 +1168,11 @@ export default function HomePage() {
               </div>
             )}
           </>
+        )}
+
+        {/* 기업 뉴스 탭 */}
+        {currentTab === 'news' && (
+          <NewsTab />
         )}
       </main>
 
