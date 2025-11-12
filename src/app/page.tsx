@@ -1101,7 +1101,6 @@ export default function HomePage() {
                   </button>
                 </div>
               </div>
-            </div>
 
             {loading ? (
               <div className="text-center py-12">
