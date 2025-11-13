@@ -1,4 +1,4 @@
-import type { TeamRecruitment, TeamApplication, TeamMatchResult } from '@/types'
+import type { TeamRecruitment, TeamApplication, TeamMatchResult, WaitlistEntry, WaitlistPriority } from '@/types'
 import { getUserPreferences } from './userPreferences'
 
 // Mock 팀 모집 데이터
@@ -656,46 +656,291 @@ function updateTeamSlots(teamId: string, positionId: string, increment: number):
 }
 
 /**
- * 매칭 점수 계산
+ * 매칭 점수 계산 (100점 만점, 7요소)
+ * 설계 문서 기준 7-factor matching algorithm
  */
-function calculateMatchScore(teamId: string, applicantId: string): number {
+export function calculateMatchScore(teamId: string, applicantId: string): number {
   const team = getTeamById(teamId)
   const userPrefs = getUserPreferences()
 
   if (!team) return 0
 
-  let score = 50 // 기본 점수
+  let totalScore = 0
 
-  // 스킬 매칭 (40점)
-  const userSkills = userPrefs.interests.skills.map(s => s.toLowerCase())
-  const requiredSkills = team.requiredSkills.map(s => s.toLowerCase())
-  const techStack = team.techStack.map(s => s.toLowerCase())
+  // === 1. 직무 일치 매칭 (25점) ===
+  const jobTitleScore = calculateJobTitleMatch(team, userPrefs)
+  totalScore += jobTitleScore
 
-  const skillMatch = [...requiredSkills, ...techStack].filter(skill =>
-    userSkills.some(userSkill => userSkill.includes(skill) || skill.includes(userSkill))
-  ).length
+  // === 2. 필수 스킬 매칭 (20점) ===
+  const requiredSkillsScore = calculateRequiredSkillsMatch(team, userPrefs)
+  totalScore += requiredSkillsScore
 
-  score += Math.min(40, skillMatch * 8)
+  // === 3. 우대 스킬 매칭 (10점) ===
+  const preferredSkillsScore = calculatePreferredSkillsMatch(team, userPrefs)
+  totalScore += preferredSkillsScore
 
-  // 경력 매칭 (10점)
-  if (team.experienceLevel === 'any') {
-    score += 10
-  } else if (userPrefs.career.years) {
-    const years = userPrefs.career.years
-    if (
-      (team.experienceLevel === 'beginner' && years <= 2) ||
-      (team.experienceLevel === 'intermediate' && years >= 2 && years <= 5) ||
-      (team.experienceLevel === 'advanced' && years >= 5)
-    ) {
-      score += 10
-    }
-  }
+  // === 4. 경력 범위 적합성 (15점) ===
+  const experienceScore = calculateExperienceMatch(team, userPrefs)
+  totalScore += experienceScore
 
-  return Math.min(100, score)
+  // === 5. 지역/근무 형태 선호 (10점) ===
+  const locationScore = calculateLocationMatch(team, userPrefs)
+  totalScore += locationScore
+
+  // === 6. 복지/문화 적합성 (10점) ===
+  const cultureScore = calculateCultureMatch(team, userPrefs)
+  totalScore += cultureScore
+
+  // === 7. 인성/성향 매칭 (10점) ===
+  const personalityScore = calculatePersonalityMatch(team, userPrefs)
+  totalScore += personalityScore
+
+  return Math.min(100, Math.round(totalScore))
 }
 
 /**
- * 스마트 매칭 - 사용자에게 추천 팀 제공
+ * 1. 직무 일치 매칭 (25점)
+ */
+function calculateJobTitleMatch(team: TeamRecruitment, userPrefs: any): number {
+  const userPosition = userPrefs.career.currentPosition?.toLowerCase() || ''
+  const userDesiredPositions = userPrefs.interests.positions.map((p: string) => p.toLowerCase())
+
+  // 팀의 모든 포지션과 비교
+  for (const position of team.positions) {
+    const positionTitle = position.title.toLowerCase()
+
+    // Exact match
+    if (
+      positionTitle === userPosition ||
+      userDesiredPositions.some((desired: string) => desired === positionTitle)
+    ) {
+      return 25
+    }
+
+    // Function match (키워드 포함)
+    const keywords = ['frontend', 'backend', 'fullstack', 'designer', 'pm', 'ai', 'ml', 'blockchain', 'devops']
+    for (const keyword of keywords) {
+      if (
+        positionTitle.includes(keyword) &&
+        (userPosition.includes(keyword) || userDesiredPositions.some((d: string) => d.includes(keyword)))
+      ) {
+        return 15
+      }
+    }
+
+    // Keyword partial match
+    if (
+      userPosition &&
+      (positionTitle.includes(userPosition) || userPosition.includes(positionTitle))
+    ) {
+      return 8
+    }
+  }
+
+  return 0
+}
+
+/**
+ * 2. 필수 스킬 매칭 (20점)
+ */
+function calculateRequiredSkillsMatch(team: TeamRecruitment, userPrefs: any): number {
+  const userSkills = userPrefs.interests.skills.map((s: string) => s.toLowerCase())
+  const requiredSkills = team.requiredSkills.map((s: string) => s.toLowerCase())
+  const techStack = team.techStack.map((s: string) => s.toLowerCase())
+
+  const allRequiredSkills = [...new Set([...requiredSkills, ...techStack])]
+
+  if (allRequiredSkills.length === 0) return 20 // 요구사항 없으면 만점
+
+  const matchedCount = allRequiredSkills.filter(skill =>
+    userSkills.some((userSkill: string) => userSkill.includes(skill) || skill.includes(userSkill))
+  ).length
+
+  const matchRatio = matchedCount / allRequiredSkills.length
+  return Math.round(matchRatio * 20)
+}
+
+/**
+ * 3. 우대 스킬 매칭 (10점)
+ */
+function calculatePreferredSkillsMatch(team: TeamRecruitment, userPrefs: any): number {
+  if (!team.preferredSkills || team.preferredSkills.length === 0) return 10 // 우대사항 없으면 만점
+
+  const userSkills = userPrefs.interests.skills.map((s: string) => s.toLowerCase())
+  const preferredSkills = team.preferredSkills.map((s: string) => s.toLowerCase())
+
+  const matchedCount = preferredSkills.filter(skill =>
+    userSkills.some((userSkill: string) => userSkill.includes(skill) || skill.includes(userSkill))
+  ).length
+
+  return Math.min(10, matchedCount * 5)
+}
+
+/**
+ * 4. 경력 범위 적합성 (15점)
+ */
+function calculateExperienceMatch(team: TeamRecruitment, userPrefs: any): number {
+  const userYears = userPrefs.career.years || 0
+
+  if (team.experienceLevel === 'any') {
+    return 15
+  }
+
+  // 경력 범위 정의
+  const experienceRanges: Record<string, { min: number; max: number }> = {
+    beginner: { min: 0, max: 2 },
+    intermediate: { min: 2, max: 5 },
+    advanced: { min: 5, max: 100 }
+  }
+
+  const range = experienceRanges[team.experienceLevel]
+  if (!range) return 0
+
+  // 범위 내에 있으면 만점
+  if (userYears >= range.min && userYears <= range.max) {
+    return 15
+  }
+
+  // 범위보다 적으면 감점
+  if (userYears < range.min) {
+    return 7
+  }
+
+  // 범위보다 많으면 (과경력) 중간 점수
+  return 10
+}
+
+/**
+ * 5. 지역/근무 형태 선호 (10점)
+ */
+function calculateLocationMatch(team: TeamRecruitment, userPrefs: any): number {
+  let score = 0
+
+  // 근무 형태 매칭
+  const userWorkTypes = userPrefs.workPreferences?.workTypes || []
+  const teamLocation = team.location // 'online', 'offline', 'hybrid'
+
+  const workTypeMapping: Record<string, string[]> = {
+    online: ['remote'],
+    offline: ['onsite'],
+    hybrid: ['remote', 'onsite', 'hybrid']
+  }
+
+  const teamWorkTypes = workTypeMapping[teamLocation] || []
+
+  if (
+    userWorkTypes.length === 0 ||
+    userWorkTypes.some((type: string) => teamWorkTypes.includes(type))
+  ) {
+    score += 5
+  }
+
+  // 지역 매칭
+  const userLocations = userPrefs.workPreferences?.preferredLocations || []
+  if (teamLocation === 'online' || userLocations.length === 0) {
+    score += 5 // 온라인이거나 선호 지역 없으면 만점
+  } else if (team.locationDetail) {
+    const teamLocationDetail = team.locationDetail.toLowerCase()
+    if (userLocations.some((loc: string) => teamLocationDetail.includes(loc.toLowerCase()))) {
+      score += 5
+    }
+  }
+
+  return score
+}
+
+/**
+ * 6. 복지/문화 적합성 (10점)
+ */
+function calculateCultureMatch(team: TeamRecruitment, userPrefs: any): number {
+  let score = 0
+
+  if (!team.benefits && !team.culture) return 10 // 정보 없으면 만점
+
+  // 복지 매칭
+  if (team.benefits) {
+    const userBenefitPrefs = {
+      remote: userPrefs.workPreferences?.workTypes?.includes('remote'),
+      flexible: userPrefs.workPreferences?.flexibleHours,
+      education: userPrefs.interests?.skills?.length > 3 // 스킬 많으면 교육 관심 있다고 가정
+    }
+
+    let benefitMatches = 0
+    let totalChecks = 0
+
+    if (userBenefitPrefs.remote !== undefined) {
+      totalChecks++
+      if (team.benefits.workFromHome && userBenefitPrefs.remote) benefitMatches++
+    }
+
+    if (userBenefitPrefs.flexible !== undefined) {
+      totalChecks++
+      if (team.benefits.flexibleHours && userBenefitPrefs.flexible) benefitMatches++
+    }
+
+    if (userBenefitPrefs.education !== undefined) {
+      totalChecks++
+      if (team.benefits.education && userBenefitPrefs.education) benefitMatches++
+    }
+
+    if (totalChecks > 0) {
+      score += Math.round((benefitMatches / totalChecks) * 5)
+    } else {
+      score += 5
+    }
+  } else {
+    score += 5
+  }
+
+  // 문화 매칭 (간단 버전)
+  if (team.culture) {
+    score += 5 // 문화 정보 있으면 기본 점수
+  } else {
+    score += 5
+  }
+
+  return score
+}
+
+/**
+ * 7. 인성/성향 매칭 (10점)
+ */
+function calculatePersonalityMatch(team: TeamRecruitment, userPrefs: any): number {
+  // 현재는 personalities 데이터가 제한적이므로 기본 점수 부여
+  // 추후 personality test 결과 연동 가능
+
+  const userPersonalities = userPrefs.personalities || []
+
+  if (userPersonalities.length === 0) {
+    return 10 // 데이터 없으면 만점
+  }
+
+  // 팀 문화와 사용자 성향 간단 매칭
+  if (team.culture) {
+    const cultureValues = team.culture.values.map((v: string) => v.toLowerCase())
+
+    // 긍정적 매칭 키워드
+    const matchKeywords = ['협업', '소통', '학습', '성장', '창의', '책임']
+
+    let matches = 0
+    for (const personality of userPersonalities) {
+      const p = personality.toLowerCase()
+      for (const keyword of matchKeywords) {
+        if (p.includes(keyword)) {
+          matches++
+          break
+        }
+      }
+    }
+
+    return Math.min(10, matches * 3)
+  }
+
+  return 10
+}
+
+/**
+ * 스마트 매칭 - 사용자에게 추천 팀 제공 (7-factor algorithm)
  */
 export function getRecommendedTeams(userId: string, limit: number = 5): TeamMatchResult[] {
   const teams = getTeams({ status: 'recruiting' })
@@ -704,35 +949,71 @@ export function getRecommendedTeams(userId: string, limit: number = 5): TeamMatc
   const results: TeamMatchResult[] = teams.map(team => {
     const matchScore = calculateMatchScore(team.id, userId)
 
-    // 상세 매칭 점수
-    const userSkills = userPrefs.interests.skills.map(s => s.toLowerCase())
-    const teamSkills = [...team.requiredSkills, ...team.techStack].map(s => s.toLowerCase())
+    // === 7가지 세부 매칭 점수 계산 ===
+    const jobTitleMatch = calculateJobTitleMatch(team, userPrefs)
+    const requiredSkillsMatch = calculateRequiredSkillsMatch(team, userPrefs)
+    const preferredSkillsMatch = calculatePreferredSkillsMatch(team, userPrefs)
+    const experienceMatch = calculateExperienceMatch(team, userPrefs)
+    const locationMatch = calculateLocationMatch(team, userPrefs)
+    const cultureMatch = calculateCultureMatch(team, userPrefs)
+    const personalityMatch = calculatePersonalityMatch(team, userPrefs)
 
-    const skillMatch = Math.min(100, teamSkills.filter(skill =>
-      userSkills.some(userSkill => userSkill.includes(skill) || skill.includes(userSkill))
-    ).length * 15)
-
-    const experienceMatch = team.experienceLevel === 'any' ? 100 :
-      (userPrefs.career.years || 0) >= 2 ? 80 : 60
-
-    const availabilityMatch = team.location === 'online' ? 100 : 70
-    const locationMatch = team.location === 'online' ? 100 : 50
-
+    // === 추천 이유 생성 (점수 기반) ===
     const recommendations: string[] = []
-    if (skillMatch > 70) recommendations.push('보유 스킬이 팀 요구사항과 잘 맞습니다')
-    if (team.experienceLevel === 'any') recommendations.push('경력 무관으로 누구나 참여 가능합니다')
-    if (team.location === 'online') recommendations.push('온라인으로 진행되어 시간/장소 제약이 없습니다')
-    if (team.teamType === 'study') recommendations.push('스터디 형태로 부담없이 시작할 수 있습니다')
+
+    if (jobTitleMatch >= 15) {
+      recommendations.push('직무가 귀하의 경력 및 관심사와 매우 잘 맞습니다')
+    }
+
+    if (requiredSkillsMatch >= 15) {
+      recommendations.push('보유하신 필수 스킬이 팀 요구사항과 높은 일치도를 보입니다')
+    }
+
+    if (preferredSkillsMatch >= 7) {
+      recommendations.push('우대 스킬을 다수 보유하고 계십니다')
+    }
+
+    if (experienceMatch >= 12) {
+      recommendations.push('경력 수준이 팀의 요구사항에 적합합니다')
+    } else if (team.experienceLevel === 'any') {
+      recommendations.push('경력 무관으로 누구나 참여 가능합니다')
+    }
+
+    if (locationMatch >= 8) {
+      recommendations.push('선호하는 근무 형태 및 지역과 잘 맞습니다')
+    } else if (team.location === 'online') {
+      recommendations.push('온라인으로 진행되어 시간/장소 제약이 없습니다')
+    }
+
+    if (cultureMatch >= 8) {
+      recommendations.push('팀 문화와 복지가 귀하의 가치관과 부합합니다')
+    }
+
+    if (personalityMatch >= 7) {
+      recommendations.push('팀의 성향과 귀하의 인성이 잘 어울립니다')
+    }
+
+    if (team.teamType === 'study') {
+      recommendations.push('스터디 형태로 부담없이 시작할 수 있습니다')
+    }
+
+    // 최소 1개 추천 이유 보장
+    if (recommendations.length === 0) {
+      recommendations.push('새로운 경험과 네트워킹 기회를 제공합니다')
+    }
 
     return {
       teamId: team.id,
       applicantId: userId,
       matchScore,
       matchReasons: {
-        skillMatch,
+        jobTitleMatch,
+        requiredSkillsMatch,
+        preferredSkillsMatch,
         experienceMatch,
-        availabilityMatch,
-        locationMatch
+        locationMatch,
+        cultureMatch,
+        personalityMatch
       },
       recommendations
     }
@@ -827,3 +1108,250 @@ export const experienceLevels = [
   { value: 'advanced', label: '고급 (5년+)' },
   { value: 'any', label: '경력 무관' }
 ]
+
+// ============================================
+// WAITLIST / QUEUE MANAGEMENT SYSTEM
+// ============================================
+
+const WAITLIST_KEY = 'jobai_team_waitlist'
+
+/**
+ * 대기열에 지원자 추가
+ * 팀이 정원 마감 시 대기열로 전환
+ */
+export function addToWaitlist(
+  teamId: string,
+  positionId: string,
+  applicantId: string,
+  applicantName: string,
+  matchScore: number
+): WaitlistEntry {
+  const now = new Date().toISOString()
+  const expiryDate = new Date()
+  expiryDate.setDate(expiryDate.getDate() + 30) // 30일 후 만료
+
+  const entry: WaitlistEntry = {
+    id: `waitlist_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    teamId,
+    positionId,
+    applicantId,
+    applicantName,
+    matchScore,
+    appliedAt: now,
+    status: 'active',
+    lastActivityAt: now,
+    createdAt: now,
+    expiresAt: expiryDate.toISOString(),
+    notified: false
+  }
+
+  const stored = localStorage.getItem(WAITLIST_KEY)
+  const waitlist: WaitlistEntry[] = stored ? JSON.parse(stored) : []
+
+  waitlist.push(entry)
+  localStorage.setItem(WAITLIST_KEY, JSON.stringify(waitlist))
+
+  return entry
+}
+
+/**
+ * 특정 팀/포지션의 대기열 조회
+ */
+export function getWaitlist(teamId: string, positionId?: string): WaitlistEntry[] {
+  const stored = localStorage.getItem(WAITLIST_KEY)
+  if (!stored) return []
+
+  const waitlist: WaitlistEntry[] = JSON.parse(stored)
+
+  // 만료/비활성 상태 업데이트
+  updateWaitlistStatuses()
+
+  const filtered = waitlist.filter(entry => {
+    if (entry.teamId !== teamId) return false
+    if (positionId && entry.positionId !== positionId) return false
+    if (entry.status === 'expired' || entry.status === 'converted') return false
+    return true
+  })
+
+  return filtered
+}
+
+/**
+ * 대기열 우선순위 정렬
+ * 1순위: 매칭 점수 (높을수록 우선)
+ * 2순위: 지원 시각 (빠를수록 우선)
+ * 3순위: 팀 우선순위 (낮을수록 우선)
+ */
+export function sortWaitlistByPriority(entries: WaitlistEntry[]): WaitlistPriority[] {
+  const prioritized = entries.map(entry => {
+    // 우선순위 계산 (낮을수록 높은 우선순위)
+    // 매칭 점수: 100점 만점을 역순으로 (100 - score)
+    // 지원 시각: 타임스탬프 (빠를수록 작은 값)
+    // 팀 우선순위: 직접 값 사용
+    const matchScorePriority = 100 - entry.matchScore
+    const timePriority = new Date(entry.appliedAt).getTime() / 1000000 // normalize to smaller number
+    const teamPriorityValue = entry.teamPriority || 999
+
+    const priority = matchScorePriority + timePriority + teamPriorityValue
+
+    let reason = `매칭점수 ${entry.matchScore}점`
+    if (entry.teamPriority !== undefined) {
+      reason += `, 팀 우선순위 ${entry.teamPriority}`
+    }
+
+    return {
+      entry,
+      priority,
+      reason
+    }
+  })
+
+  // 낮은 priority 값이 먼저 오도록 정렬
+  return prioritized.sort((a, b) => a.priority - b.priority)
+}
+
+/**
+ * 공석 발생 시 대기열에서 자동 승격
+ * 우선순위가 가장 높은 지원자를 자동으로 수락
+ */
+export function processWaitlistOnVacancy(
+  teamId: string,
+  positionId: string,
+  vacancyCount: number = 1
+): WaitlistEntry[] {
+  const waitlist = getWaitlist(teamId, positionId)
+  const sorted = sortWaitlistByPriority(waitlist)
+
+  const converted: WaitlistEntry[] = []
+
+  for (let i = 0; i < Math.min(vacancyCount, sorted.length); i++) {
+    const { entry } = sorted[i]
+
+    // 대기열 항목을 '전환됨' 상태로 변경
+    updateWaitlistEntryStatus(entry.id, 'converted')
+
+    // 알림 발송 표시
+    markWaitlistNotified(entry.id)
+
+    converted.push(entry)
+  }
+
+  return converted
+}
+
+/**
+ * 대기열 항목 상태 업데이트
+ */
+export function updateWaitlistEntryStatus(
+  entryId: string,
+  status: 'active' | 'dormant' | 'expired' | 'converted'
+): boolean {
+  const stored = localStorage.getItem(WAITLIST_KEY)
+  if (!stored) return false
+
+  const waitlist: WaitlistEntry[] = JSON.parse(stored)
+  const entry = waitlist.find(e => e.id === entryId)
+
+  if (!entry) return false
+
+  entry.status = status
+  entry.lastActivityAt = new Date().toISOString()
+
+  localStorage.setItem(WAITLIST_KEY, JSON.stringify(waitlist))
+  return true
+}
+
+/**
+ * 대기열 알림 발송 표시
+ */
+export function markWaitlistNotified(entryId: string): boolean {
+  const stored = localStorage.getItem(WAITLIST_KEY)
+  if (!stored) return false
+
+  const waitlist: WaitlistEntry[] = JSON.parse(stored)
+  const entry = waitlist.find(e => e.id === entryId)
+
+  if (!entry) return false
+
+  entry.notified = true
+  entry.notifiedAt = new Date().toISOString()
+
+  localStorage.setItem(WAITLIST_KEY, JSON.stringify(waitlist))
+  return true
+}
+
+/**
+ * 만료 및 비활성 정책 처리
+ * - 30일 경과: expired
+ * - 14일 동안 활동 없음: dormant
+ */
+export function updateWaitlistStatuses(): void {
+  const stored = localStorage.getItem(WAITLIST_KEY)
+  if (!stored) return
+
+  const waitlist: WaitlistEntry[] = JSON.parse(stored)
+  const now = new Date()
+
+  let updated = false
+
+  waitlist.forEach(entry => {
+    // 이미 만료되었거나 전환된 항목은 스킵
+    if (entry.status === 'expired' || entry.status === 'converted') return
+
+    const expiryDate = new Date(entry.expiresAt)
+    const lastActivity = new Date(entry.lastActivityAt)
+    const daysSinceActivity = (now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24)
+
+    // 30일 경과 시 만료
+    if (now >= expiryDate) {
+      entry.status = 'expired'
+      updated = true
+    }
+    // 14일 동안 활동 없으면 비활성
+    else if (daysSinceActivity >= 14 && entry.status === 'active') {
+      entry.status = 'dormant'
+      updated = true
+    }
+  })
+
+  if (updated) {
+    localStorage.setItem(WAITLIST_KEY, JSON.stringify(waitlist))
+  }
+}
+
+/**
+ * 대기열에서 제거
+ */
+export function removeFromWaitlist(entryId: string): boolean {
+  const stored = localStorage.getItem(WAITLIST_KEY)
+  if (!stored) return false
+
+  const waitlist: WaitlistEntry[] = JSON.parse(stored)
+  const index = waitlist.findIndex(e => e.id === entryId)
+
+  if (index === -1) return false
+
+  waitlist.splice(index, 1)
+  localStorage.setItem(WAITLIST_KEY, JSON.stringify(waitlist))
+
+  return true
+}
+
+/**
+ * 사용자별 대기열 목록 조회
+ */
+export function getUserWaitlist(applicantId: string): WaitlistEntry[] {
+  const stored = localStorage.getItem(WAITLIST_KEY)
+  if (!stored) return []
+
+  const waitlist: WaitlistEntry[] = JSON.parse(stored)
+
+  // 상태 업데이트
+  updateWaitlistStatuses()
+
+  return waitlist.filter(entry =>
+    entry.applicantId === applicantId &&
+    entry.status !== 'expired' &&
+    entry.status !== 'converted'
+  )
+}

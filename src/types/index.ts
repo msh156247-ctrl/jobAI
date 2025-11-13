@@ -419,13 +419,47 @@ export interface TeamApplication {
 export interface TeamMatchResult {
   teamId: string
   applicantId: string
-  matchScore: number // 0-100
+  matchScore: number // 0-100 (7-factor algorithm)
   matchReasons: {
-    skillMatch: number // 스킬 매칭 점수
-    experienceMatch: number // 경력 매칭 점수
-    availabilityMatch: number // 활동 가능 시간 매칭 점수
-    locationMatch: number // 위치 매칭 점수
+    jobTitleMatch: number // 직무 일치 (25점)
+    requiredSkillsMatch: number // 필수 스킬 (20점)
+    preferredSkillsMatch: number // 우대 스킬 (10점)
+    experienceMatch: number // 경력 범위 (15점)
+    locationMatch: number // 지역/근무형태 (10점)
+    cultureMatch: number // 복지/문화 (10점)
+    personalityMatch: number // 인성/성향 (10점)
   }
   recommendations: string[] // 추천 이유
   concerns?: string[] // 우려사항
+}
+
+// 대기열 항목
+export interface WaitlistEntry {
+  id: string
+  teamId: string
+  positionId: string
+  applicantId: string
+  applicantName: string
+
+  // 우선순위 계산 요소
+  matchScore: number // 매칭 점수 (1순위)
+  appliedAt: string // 지원 시각 (2순위)
+  teamPriority?: number // 팀에서 지정한 우선순위 (3순위, optional)
+
+  // 상태 관리
+  status: 'active' | 'dormant' | 'expired' | 'converted' // 활성/비활성/만료/전환됨
+  lastActivityAt: string // 마지막 활동 시각
+  createdAt: string
+  expiresAt: string // 만료 예정일 (30일)
+
+  // 알림
+  notified: boolean // 공석 발생 시 알림 여부
+  notifiedAt?: string
+}
+
+// 대기열 우선순위 정렬 결과
+export interface WaitlistPriority {
+  entry: WaitlistEntry
+  priority: number // 계산된 우선순위 (낮을수록 높은 우선순위)
+  reason: string // 우선순위 부여 이유
 }

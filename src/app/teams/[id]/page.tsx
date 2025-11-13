@@ -499,10 +499,12 @@ export default function TeamDetailPage({ params }: PageProps) {
                 className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors"
               >
                 <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">
-                      {position.title}
-                    </h3>
+                  <div className="flex-1">
+                    <Link href={`/teams/${team.id}/roles/${position.id}`}>
+                      <h3 className="font-semibold text-gray-900 mb-1 hover:text-blue-600 transition-colors">
+                        {position.title}
+                      </h3>
+                    </Link>
                     <p className="text-sm text-gray-600 mb-2">
                       {position.description}
                     </p>
@@ -519,14 +521,22 @@ export default function TeamDetailPage({ params }: PageProps) {
                       )}
                     </div>
                   </div>
-                  {team.status === 'recruiting' && position.filledCount < position.requiredCount && (
-                    <button
-                      onClick={() => handleApply(position)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                  <div className="flex gap-2">
+                    <Link
+                      href={`/teams/${team.id}/roles/${position.id}`}
+                      className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium whitespace-nowrap"
                     >
-                      지원하기
-                    </button>
-                  )}
+                      자세히
+                    </Link>
+                    {team.status === 'recruiting' && position.filledCount < position.requiredCount && (
+                      <button
+                        onClick={() => handleApply(position)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium whitespace-nowrap"
+                      >
+                        지원하기
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -547,9 +557,16 @@ export default function TeamDetailPage({ params }: PageProps) {
                   <div>
                     <p className="text-xs font-medium text-gray-700 mb-1">담당 업무</p>
                     <ul className="list-disc list-inside text-sm text-gray-600 space-y-0.5">
-                      {position.responsibilities.map((resp, idx) => (
+                      {position.responsibilities.slice(0, 2).map((resp, idx) => (
                         <li key={idx}>{resp}</li>
                       ))}
+                      {position.responsibilities.length > 2 && (
+                        <li className="text-blue-600">
+                          <Link href={`/teams/${team.id}/roles/${position.id}`}>
+                            +{position.responsibilities.length - 2}개 더 보기
+                          </Link>
+                        </li>
+                      )}
                     </ul>
                   </div>
                 </div>
@@ -715,23 +732,97 @@ export default function TeamDetailPage({ params }: PageProps) {
               </div>
             </div>
 
-            {/* 세부 매칭 점수 */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              <div className="text-center p-3 bg-white rounded-lg">
-                <p className="text-xs text-gray-600 mb-1">스킬 매칭</p>
-                <p className="text-lg font-bold text-blue-600">{matchResult.matchReasons.skillMatch}%</p>
+            {/* 세부 매칭 점수 (7-factor breakdown) */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-4">
+              <div className="text-center p-3 bg-white rounded-lg border border-gray-100">
+                <p className="text-xs text-gray-600 mb-1">직무 일치</p>
+                <p className="text-sm font-bold text-blue-600">
+                  {matchResult.matchReasons.jobTitleMatch}/25
+                </p>
+                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                  <div
+                    className="bg-blue-600 h-1.5 rounded-full"
+                    style={{ width: `${(matchResult.matchReasons.jobTitleMatch / 25) * 100}%` }}
+                  />
+                </div>
               </div>
-              <div className="text-center p-3 bg-white rounded-lg">
-                <p className="text-xs text-gray-600 mb-1">경력 매칭</p>
-                <p className="text-lg font-bold text-purple-600">{matchResult.matchReasons.experienceMatch}%</p>
+
+              <div className="text-center p-3 bg-white rounded-lg border border-gray-100">
+                <p className="text-xs text-gray-600 mb-1">필수 스킬</p>
+                <p className="text-sm font-bold text-purple-600">
+                  {matchResult.matchReasons.requiredSkillsMatch}/20
+                </p>
+                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                  <div
+                    className="bg-purple-600 h-1.5 rounded-full"
+                    style={{ width: `${(matchResult.matchReasons.requiredSkillsMatch / 20) * 100}%` }}
+                  />
+                </div>
               </div>
-              <div className="text-center p-3 bg-white rounded-lg">
-                <p className="text-xs text-gray-600 mb-1">활동 가능성</p>
-                <p className="text-lg font-bold text-indigo-600">{matchResult.matchReasons.availabilityMatch}%</p>
+
+              <div className="text-center p-3 bg-white rounded-lg border border-gray-100">
+                <p className="text-xs text-gray-600 mb-1">우대 스킬</p>
+                <p className="text-sm font-bold text-indigo-600">
+                  {matchResult.matchReasons.preferredSkillsMatch}/10
+                </p>
+                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                  <div
+                    className="bg-indigo-600 h-1.5 rounded-full"
+                    style={{ width: `${(matchResult.matchReasons.preferredSkillsMatch / 10) * 100}%` }}
+                  />
+                </div>
               </div>
-              <div className="text-center p-3 bg-white rounded-lg">
-                <p className="text-xs text-gray-600 mb-1">위치 매칭</p>
-                <p className="text-lg font-bold text-teal-600">{matchResult.matchReasons.locationMatch}%</p>
+
+              <div className="text-center p-3 bg-white rounded-lg border border-gray-100">
+                <p className="text-xs text-gray-600 mb-1">경력 적합성</p>
+                <p className="text-sm font-bold text-green-600">
+                  {matchResult.matchReasons.experienceMatch}/15
+                </p>
+                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                  <div
+                    className="bg-green-600 h-1.5 rounded-full"
+                    style={{ width: `${(matchResult.matchReasons.experienceMatch / 15) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="text-center p-3 bg-white rounded-lg border border-gray-100">
+                <p className="text-xs text-gray-600 mb-1">근무 형태</p>
+                <p className="text-sm font-bold text-teal-600">
+                  {matchResult.matchReasons.locationMatch}/10
+                </p>
+                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                  <div
+                    className="bg-teal-600 h-1.5 rounded-full"
+                    style={{ width: `${(matchResult.matchReasons.locationMatch / 10) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="text-center p-3 bg-white rounded-lg border border-gray-100">
+                <p className="text-xs text-gray-600 mb-1">복지/문화</p>
+                <p className="text-sm font-bold text-orange-600">
+                  {matchResult.matchReasons.cultureMatch}/10
+                </p>
+                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                  <div
+                    className="bg-orange-600 h-1.5 rounded-full"
+                    style={{ width: `${(matchResult.matchReasons.cultureMatch / 10) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="text-center p-3 bg-white rounded-lg border border-gray-100">
+                <p className="text-xs text-gray-600 mb-1">성향 매칭</p>
+                <p className="text-sm font-bold text-pink-600">
+                  {matchResult.matchReasons.personalityMatch}/10
+                </p>
+                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                  <div
+                    className="bg-pink-600 h-1.5 rounded-full"
+                    style={{ width: `${(matchResult.matchReasons.personalityMatch / 10) * 100}%` }}
+                  />
+                </div>
               </div>
             </div>
 
