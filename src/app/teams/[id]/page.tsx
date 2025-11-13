@@ -268,6 +268,19 @@ export default function TeamDetailPage({ params }: PageProps) {
             <span>지원자 {team.applicantsCount}</span>
             <span>북마크 {team.bookmarksCount}</span>
           </div>
+
+          {/* 팀장 전용: 지원자 관리 버튼 */}
+          {user && user.id === team.leaderId && (
+            <div className="pt-4 border-t border-gray-100 mt-4">
+              <Link
+                href={`/teams/${team.id}/manage`}
+                className="block w-full py-3 text-center bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <Users className="w-5 h-5" />
+                지원자 관리 ({team.applicantsCount})
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* 팀 설명 */}

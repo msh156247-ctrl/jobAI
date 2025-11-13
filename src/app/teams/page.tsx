@@ -114,9 +114,19 @@ export default function TeamsPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         {/* 헤더 */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">팀 모집</h1>
-          <p className="text-gray-600">함께 성장할 팀원을 찾아보세요</p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">팀 모집</h1>
+            <p className="text-gray-600">함께 성장할 팀원을 찾아보세요</p>
+          </div>
+          {user && (
+            <Link
+              href="/teams/create"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium whitespace-nowrap"
+            >
+              + 팀 생성
+            </Link>
+          )}
         </div>
 
         {/* 추천 팀 (로그인 시에만) */}
