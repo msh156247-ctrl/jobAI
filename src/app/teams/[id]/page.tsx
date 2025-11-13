@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react'
 import { use } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { getTeamById, incrementTeamViews, applyToTeam, toggleTeamBookmark } from '@/lib/teamData'
+import { getTeamById, incrementTeamViews, applyToTeam, toggleTeamBookmark, getRecommendedTeams, getTeams } from '@/lib/teamData'
 import { getUserPreferences } from '@/lib/userPreferences'
-import type { TeamRecruitment, TeamPosition } from '@/types'
+import type { TeamRecruitment, TeamPosition, TeamMatchResult } from '@/types'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
@@ -20,7 +20,9 @@ import {
   CheckCircle2,
   AlertCircle,
   ExternalLink,
-  Send
+  Send,
+  TrendingUp,
+  Target
 } from 'lucide-react'
 
 interface PageProps {
@@ -36,6 +38,8 @@ export default function TeamDetailPage({ params }: PageProps) {
   const [showApplyModal, setShowApplyModal] = useState(false)
   const [selectedPosition, setSelectedPosition] = useState<TeamPosition | null>(null)
   const [isBookmarked, setIsBookmarked] = useState(false)
+  const [matchResult, setMatchResult] = useState<TeamMatchResult | null>(null)
+  const [similarTeams, setSimilarTeams] = useState<TeamRecruitment[]>([])
 
   // 지원 폼 상태
   const [applyForm, setApplyForm] = useState({
@@ -51,8 +55,28 @@ export default function TeamDetailPage({ params }: PageProps) {
     if (teamData) {
       setTeam(teamData)
       incrementTeamViews(resolvedParams.id)
+
+      // 로그인 사용자: 매칭 점수 계산
+      if (user) {
+        const recommendations = getRecommendedTeams(user.id, 10)
+        const currentMatch = recommendations.find(r => r.teamId === resolvedParams.id)
+        if (currentMatch) {
+          setMatchResult(currentMatch)
+        }
+
+        // 유사한 팀 추천 (같은 업종 또는 기술 스택)
+        const allTeams = getTeams({ status: 'recruiting' })
+        const similar = allTeams
+          .filter(t =>
+            t.id !== resolvedParams.id &&
+            (t.industry === teamData.industry ||
+             t.techStack.some(tech => teamData.techStack.includes(tech)))
+          )
+          .slice(0, 3)
+        setSimilarTeams(similar)
+      }
     }
-  }, [resolvedParams.id])
+  }, [resolvedParams.id, user])
 
   const handleApply = (position: TeamPosition) => {
     if (!user) {
@@ -664,6 +688,128 @@ export default function TeamDetailPage({ params }: PageProps) {
                 >
                   #{tag}
                 </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 매칭 점수 (로그인 사용자만) */}
+        {user && matchResult && (
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 p-6 mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Target className="w-5 h-5 text-green-600" />
+              <h2 className="text-lg font-bold text-gray-900">매칭 분석</h2>
+            </div>
+
+            {/* 전체 매칭 점수 */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-700">전체 매칭도</span>
+                <span className="text-2xl font-bold text-green-600">{matchResult.matchScore}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div
+                  className="bg-gradient-to-r from-green-500 to-emerald-600 h-3 rounded-full transition-all"
+                  style={{ width: `${matchResult.matchScore}%` }}
+                />
+              </div>
+            </div>
+
+            {/* 세부 매칭 점수 */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="text-center p-3 bg-white rounded-lg">
+                <p className="text-xs text-gray-600 mb-1">스킬 매칭</p>
+                <p className="text-lg font-bold text-blue-600">{matchResult.matchReasons.skillMatch}%</p>
+              </div>
+              <div className="text-center p-3 bg-white rounded-lg">
+                <p className="text-xs text-gray-600 mb-1">경력 매칭</p>
+                <p className="text-lg font-bold text-purple-600">{matchResult.matchReasons.experienceMatch}%</p>
+              </div>
+              <div className="text-center p-3 bg-white rounded-lg">
+                <p className="text-xs text-gray-600 mb-1">활동 가능성</p>
+                <p className="text-lg font-bold text-indigo-600">{matchResult.matchReasons.availabilityMatch}%</p>
+              </div>
+              <div className="text-center p-3 bg-white rounded-lg">
+                <p className="text-xs text-gray-600 mb-1">위치 매칭</p>
+                <p className="text-lg font-bold text-teal-600">{matchResult.matchReasons.locationMatch}%</p>
+              </div>
+            </div>
+
+            {/* 추천 이유 */}
+            {matchResult.recommendations.length > 0 && (
+              <div className="bg-white rounded-lg p-4">
+                <p className="text-sm font-semibold text-gray-700 mb-2">추천 이유</p>
+                <ul className="space-y-1">
+                  {matchResult.recommendations.map((reason, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
+                      <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      <span>{reason}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 유사한 팀 추천 */}
+        {similarTeams.length > 0 && (
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp className="w-5 h-5 text-blue-600" />
+              <h2 className="text-lg font-bold text-gray-900">이런 팀은 어때요?</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {similarTeams.map(similarTeam => (
+                <Link
+                  key={similarTeam.id}
+                  href={`/teams/${similarTeam.id}`}
+                  className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition-all"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <span className="px-2 py-1 text-xs font-medium rounded bg-green-100 text-green-700">
+                      {similarTeam.status === 'recruiting' ? '모집중' : '마감임박'}
+                    </span>
+                    {similarTeam.companyLogo && (
+                      <img
+                        src={similarTeam.companyLogo}
+                        alt={similarTeam.title}
+                        className="w-8 h-8 rounded object-cover"
+                      />
+                    )}
+                  </div>
+
+                  <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 text-sm">
+                    {similarTeam.title}
+                  </h3>
+
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {similarTeam.techStack.slice(0, 3).map(tech => (
+                      <span
+                        key={tech}
+                        className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded"
+                      >
+                        {tech}
+                      </span>
+                    ))}
+                    {similarTeam.techStack.length > 3 && (
+                      <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
+                        +{similarTeam.techStack.length - 3}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <span className="flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      {similarTeam.filledSlots}/{similarTeam.totalSlots}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {similarTeam.duration}
+                    </span>
+                  </div>
+                </Link>
               ))}
             </div>
           </div>
