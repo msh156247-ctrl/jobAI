@@ -294,6 +294,38 @@ export interface CommunityComment {
   parentId?: string // 대댓글용
 }
 
+// 팀 프로젝트
+export interface TeamProject {
+  id: string
+  name: string
+  description: string
+  progress: number // 0-100
+  status: 'planning' | 'in-progress' | 'completed'
+  startDate?: string
+  endDate?: string
+}
+
+// 팀 문화
+export interface TeamCulture {
+  values: string[] // 팀 가치 (예: "코드 품질 중시", "빠른 실험")
+  workingStyle: string[] // 일하는 방식 (예: "Agile Sprint", "Code Review 필수")
+  communicationStyle: string // 커뮤니케이션 스타일
+  meetingFrequency: string // 미팅 빈도
+}
+
+// 복지/혜택
+export interface Benefits {
+  salary?: string // 연봉 범위
+  equity?: boolean // 스톡옵션
+  workFromHome?: boolean // 재택 가능
+  flexibleHours?: boolean // 유연근무
+  meals?: boolean // 식대 제공
+  education?: boolean // 교육비 지원
+  equipment?: boolean // 장비 지원
+  vacation?: string // 휴가 정책
+  other?: string[] // 기타 복지
+}
+
 // 팀 모집 타입
 export interface TeamRecruitment {
   id: string
@@ -306,6 +338,8 @@ export interface TeamRecruitment {
   teamType: 'project' | 'study' | 'startup' | 'contest' | 'opensource'
   industry: string // IT/기술, 금융, 의료, 교육, 마케팅, 디자인 등
   techStack: string[] // 기술 스택
+  companyLogo?: string // 회사 로고 URL
+  teamSize?: number // 팀 전체 크기
 
   // 모집 정보
   positions: TeamPosition[] // 모집 포지션
@@ -322,6 +356,11 @@ export interface TeamRecruitment {
   requiredSkills: string[] // 필수 스킬
   preferredSkills?: string[] // 우대 스킬
   experienceLevel: 'beginner' | 'intermediate' | 'advanced' | 'any'
+
+  // 팀 문화 & 프로젝트 (NEW)
+  culture?: TeamCulture // 팀 문화
+  currentProjects?: TeamProject[] // 현재 진행 중인 프로젝트
+  benefits?: Benefits // 복지/혜택
 
   // 통계
   views: number

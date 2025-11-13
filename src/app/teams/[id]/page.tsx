@@ -212,33 +212,84 @@ export default function TeamDetailPage({ params }: PageProps) {
 
         {/* 팀 헤더 */}
         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex gap-2">
-              <span className={`px-3 py-1 text-sm font-medium rounded ${getStatusColor(team.status)}`}>
-                {getStatusLabel(team.status)}
-              </span>
-              <span className="px-3 py-1 text-sm font-medium rounded bg-blue-100 text-blue-700">
-                {getTeamTypeLabel(team.teamType)}
-              </span>
-              <span className="px-3 py-1 text-sm font-medium rounded bg-purple-100 text-purple-700">
-                {team.industry}
-              </span>
+          {/* 상단 */}
+          <div className="flex items-start gap-4 mb-4">
+            {/* 로고 */}
+            {team.companyLogo && (
+              <div className="flex-shrink-0">
+                <img
+                  src={team.companyLogo}
+                  alt={team.title}
+                  className="w-16 h-16 rounded-lg object-cover border border-gray-200"
+                />
+              </div>
+            )}
+
+            {/* 타이틀 및 태그 */}
+            <div className="flex-1">
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex flex-wrap gap-2">
+                  <span className={`px-3 py-1 text-sm font-medium rounded ${getStatusColor(team.status)}`}>
+                    {getStatusLabel(team.status)}
+                  </span>
+                  <span className="px-3 py-1 text-sm font-medium rounded bg-blue-100 text-blue-700">
+                    {getTeamTypeLabel(team.teamType)}
+                  </span>
+                  <span className="px-3 py-1 text-sm font-medium rounded bg-purple-100 text-purple-700">
+                    {team.industry}
+                  </span>
+                </div>
+                <button
+                  onClick={handleBookmark}
+                  className={`p-2 rounded-lg transition-colors flex-shrink-0 ${
+                    isBookmarked
+                      ? 'bg-yellow-100 text-yellow-600'
+                      : 'bg-gray-100 text-gray-400 hover:text-yellow-500'
+                  }`}
+                >
+                  <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
+                </button>
+              </div>
+
+              <h1 className="text-2xl font-bold text-gray-900">
+                {team.title}
+              </h1>
             </div>
-            <button
-              onClick={handleBookmark}
-              className={`p-2 rounded-lg transition-colors ${
-                isBookmarked
-                  ? 'bg-yellow-100 text-yellow-600'
-                  : 'bg-gray-100 text-gray-400 hover:text-yellow-500'
-              }`}
-            >
-              <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
-            </button>
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            {team.title}
-          </h1>
+          {/* 팀 멤버 시각화 */}
+          <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-semibold text-gray-700">팀 구성원</p>
+              {team.teamSize && (
+                <p className="text-xs text-gray-600">전체 팀: {team.teamSize}명</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              {team.positions.map(position => (
+                <div key={position.id} className="flex items-center gap-3">
+                  <p className="text-xs text-gray-600 w-24 truncate">{position.title}</p>
+                  <div className="flex gap-1">
+                    {Array.from({ length: position.requiredCount }).map((_, idx) => (
+                      <div
+                        key={idx}
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
+                          idx < position.filledCount
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-200 text-gray-400'
+                        }`}
+                      >
+                        {idx < position.filledCount ? '●' : '○'}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    {position.filledCount}/{position.requiredCount}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
             <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -299,6 +350,51 @@ export default function TeamDetailPage({ params }: PageProps) {
           )}
         </div>
 
+        {/* 팀 문화 */}
+        {team.culture && (
+          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">팀 문화</h2>
+            <div className="space-y-4">
+              {/* 팀 가치 */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">핵심 가치</h3>
+                <div className="flex flex-wrap gap-2">
+                  {team.culture.values.map((value, idx) => (
+                    <span
+                      key={idx}
+                      className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-sm"
+                    >
+                      {value}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* 일하는 방식 */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">일하는 방식</h3>
+                <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                  {team.culture.workingStyle.map((style, idx) => (
+                    <li key={idx}>{style}</li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* 커뮤니케이션 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-gray-100">
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">커뮤니케이션 방식</p>
+                  <p className="text-sm text-gray-700">{team.culture.communicationStyle}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">미팅 빈도</p>
+                  <p className="text-sm text-gray-700">{team.culture.meetingFrequency}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 기술 스택 */}
         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
           <h2 className="text-lg font-bold text-gray-900 mb-4">기술 스택</h2>
@@ -313,6 +409,61 @@ export default function TeamDetailPage({ params }: PageProps) {
             ))}
           </div>
         </div>
+
+        {/* 진행 중인 프로젝트 */}
+        {team.currentProjects && team.currentProjects.length > 0 && (
+          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">진행 중인 프로젝트</h2>
+            <div className="space-y-4">
+              {team.currentProjects.map(project => (
+                <div
+                  key={project.id}
+                  className="border border-gray-200 rounded-lg p-4"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{project.name}</h3>
+                      <p className="text-sm text-gray-600 mt-1">{project.description}</p>
+                    </div>
+                    <span className={`px-2 py-1 text-xs font-medium rounded ${
+                      project.status === 'completed' ? 'bg-green-100 text-green-700' :
+                      project.status === 'in-progress' ? 'bg-blue-100 text-blue-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {project.status === 'completed' ? '완료' :
+                       project.status === 'in-progress' ? '진행중' : '계획중'}
+                    </span>
+                  </div>
+
+                  {/* 진행률 */}
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                      <span>진행률</span>
+                      <span className="font-semibold">{project.progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all ${
+                          project.status === 'completed' ? 'bg-green-600' :
+                          project.status === 'in-progress' ? 'bg-blue-600' :
+                          'bg-gray-400'
+                        }`}
+                        style={{ width: `${project.progress}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 기간 */}
+                  {project.startDate && (
+                    <div className="mt-2 text-xs text-gray-500">
+                      {project.startDate} ~ {project.endDate || '진행중'}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* 모집 포지션 */}
         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
@@ -425,9 +576,85 @@ export default function TeamDetailPage({ params }: PageProps) {
           </div>
         </div>
 
+        {/* 복지 및 혜택 */}
+        {team.benefits && (
+          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">복지 및 혜택</h2>
+            <div className="space-y-4">
+              {/* 급여 정보 */}
+              {team.benefits.salary && (
+                <div className="pb-3 border-b border-gray-100">
+                  <p className="text-sm text-gray-600 mb-1">급여</p>
+                  <p className="text-base font-semibold text-gray-900">{team.benefits.salary}</p>
+                </div>
+              )}
+
+              {/* 주요 혜택 그리드 */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {team.benefits.equity && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <span className="text-gray-700">스톡옵션</span>
+                  </div>
+                )}
+                {team.benefits.workFromHome && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <span className="text-gray-700">재택근무</span>
+                  </div>
+                )}
+                {team.benefits.flexibleHours && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <span className="text-gray-700">유연근무</span>
+                  </div>
+                )}
+                {team.benefits.meals && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <span className="text-gray-700">식대지원</span>
+                  </div>
+                )}
+                {team.benefits.education && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <span className="text-gray-700">교육지원</span>
+                  </div>
+                )}
+                {team.benefits.equipment && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <span className="text-gray-700">장비지원</span>
+                  </div>
+                )}
+              </div>
+
+              {/* 휴가 정책 */}
+              {team.benefits.vacation && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">휴가</p>
+                  <p className="text-sm text-gray-900">{team.benefits.vacation}</p>
+                </div>
+              )}
+
+              {/* 기타 복지 */}
+              {team.benefits.other && team.benefits.other.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-gray-700 mb-2">기타 혜택</p>
+                  <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                    {team.benefits.other.map((benefit, idx) => (
+                      <li key={idx}>{benefit}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* 태그 */}
         {team.tags && team.tags.length > 0 && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
             <h2 className="text-lg font-bold text-gray-900 mb-4">태그</h2>
             <div className="flex flex-wrap gap-2">
               {team.tags.map(tag => (

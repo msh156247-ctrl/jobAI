@@ -22,6 +22,8 @@ export const mockTeams: TeamRecruitment[] = [
     teamType: 'startup',
     industry: 'IT/기술',
     techStack: ['React', 'Next.js', 'TypeScript', 'Python', 'TensorFlow', 'AWS'],
+    companyLogo: 'https://via.placeholder.com/120x120?text=HealthAI',
+    teamSize: 8,
     positions: [
       {
         id: 'pos_1',
@@ -59,6 +61,51 @@ export const mockTeams: TeamRecruitment[] = [
     requiredSkills: ['협업 능력', '책임감', '적극적인 커뮤니케이션'],
     preferredSkills: ['헬스케어 도메인 지식', '스타트업 경험'],
     experienceLevel: 'intermediate',
+    culture: {
+      values: ['빠른 실험과 학습', '사용자 중심 개발', '코드 품질 중시'],
+      workingStyle: ['Agile Sprint (2주)', 'Code Review 필수', '페어 프로그래밍 권장'],
+      communicationStyle: '슬랙 메신저 + 주 3회 오프라인 미팅',
+      meetingFrequency: '주 3회 (월/수/금 저녁 7시)'
+    },
+    currentProjects: [
+      {
+        id: 'proj_1',
+        name: 'AI 챗봇 MVP 개발',
+        description: '건강 상담 AI 챗봇 초기 버전',
+        progress: 65,
+        status: 'in-progress',
+        startDate: '2025-10-01',
+        endDate: '2025-12-31'
+      },
+      {
+        id: 'proj_2',
+        name: '데이터 수집 시스템',
+        description: '사용자 건강 데이터 수집 및 전처리',
+        progress: 80,
+        status: 'in-progress',
+        startDate: '2025-09-15',
+        endDate: '2025-11-30'
+      },
+      {
+        id: 'proj_3',
+        name: '의료진 매칭 알고리즘',
+        description: '증상 기반 의료진 추천 알고리즘',
+        progress: 30,
+        status: 'planning',
+        startDate: '2025-12-01'
+      }
+    ],
+    benefits: {
+      salary: '협의 (스톡옵션 포함)',
+      equity: true,
+      workFromHome: true,
+      flexibleHours: true,
+      meals: false,
+      education: true,
+      equipment: true,
+      vacation: '자율 휴가제',
+      other: ['서적 구입비 지원', '컨퍼런스 참가비 지원', '팀 빌딩 월 1회']
+    },
     views: 342,
     applicantsCount: 12,
     bookmarksCount: 28,
@@ -86,6 +133,8 @@ export const mockTeams: TeamRecruitment[] = [
     teamType: 'project',
     industry: 'IT/기술',
     techStack: ['Solidity', 'Web3.js', 'React', 'Node.js', 'IPFS'],
+    companyLogo: 'https://via.placeholder.com/120x120?text=NFT',
+    teamSize: 10,
     positions: [
       {
         id: 'pos_3',
@@ -122,6 +171,52 @@ export const mockTeams: TeamRecruitment[] = [
     requiredSkills: ['블록체인 기본 지식', 'Git/GitHub'],
     preferredSkills: ['NFT 프로젝트 경험', 'DeFi 이해'],
     experienceLevel: 'intermediate',
+    culture: {
+      values: ['탈중앙화 철학', '투명한 협업', '커뮤니티 우선'],
+      workingStyle: ['비동기 협업', 'GitHub Issues 기반 작업', '주간 스프린트'],
+      communicationStyle: '디스코드 + 노션',
+      meetingFrequency: '주 2회 (화/목 저녁 9시)'
+    },
+    currentProjects: [
+      {
+        id: 'proj_4',
+        name: 'NFT 민팅 컨트랙트',
+        description: 'ERC-721 기반 NFT 발행 스마트 컨트랙트',
+        progress: 85,
+        status: 'in-progress',
+        startDate: '2025-10-15',
+        endDate: '2025-11-25'
+      },
+      {
+        id: 'proj_5',
+        name: '마켓플레이스 UI',
+        description: 'NFT 거래 플랫폼 프론트엔드',
+        progress: 50,
+        status: 'in-progress',
+        startDate: '2025-10-20',
+        endDate: '2025-12-10'
+      },
+      {
+        id: 'proj_6',
+        name: '경매 시스템',
+        description: '실시간 입찰 및 경매 로직',
+        progress: 20,
+        status: 'planning',
+        startDate: '2025-12-01',
+        endDate: '2026-01-15'
+      }
+    ],
+    benefits: {
+      salary: '무급 (수익 분배 계약)',
+      equity: true,
+      workFromHome: true,
+      flexibleHours: true,
+      meals: false,
+      education: false,
+      equipment: false,
+      vacation: '자율',
+      other: ['프로젝트 수익 지분 배분', 'NFT 에어드랍', '포트폴리오 지원']
+    },
     views: 589,
     applicantsCount: 23,
     bookmarksCount: 67,
@@ -208,6 +303,7 @@ export const mockTeams: TeamRecruitment[] = [
     teamType: 'contest',
     industry: 'IT/기술',
     techStack: ['React Native', 'Firebase', 'Python', 'FastAPI'],
+    teamSize: 4,
     positions: [
       {
         id: 'pos_6',
@@ -245,6 +341,43 @@ export const mockTeams: TeamRecruitment[] = [
     requiredSkills: ['빠른 개발 능력', '팀워크', '체력'],
     preferredSkills: ['해커톤 경험', '프로토타입 개발 경험'],
     experienceLevel: 'any',
+    culture: {
+      values: ['빠른 실행력', '창의적 문제 해결', '즐거운 협업'],
+      workingStyle: ['해커톤 스타일', '빠른 의사결정', '프로토타입 우선'],
+      communicationStyle: '오프라인 대면 + 카카오톡',
+      meetingFrequency: '대회 기간 중 상시'
+    },
+    currentProjects: [
+      {
+        id: 'proj_7',
+        name: '해커톤 아이디어 기획',
+        description: '쓰레기 분류 AI 앱 컨셉 구체화',
+        progress: 100,
+        status: 'completed',
+        startDate: '2025-11-01',
+        endDate: '2025-11-10'
+      },
+      {
+        id: 'proj_8',
+        name: '프로토타입 개발',
+        description: '해커톤 기간 중 MVP 개발',
+        progress: 0,
+        status: 'planning',
+        startDate: '2025-12-15',
+        endDate: '2025-12-17'
+      }
+    ],
+    benefits: {
+      salary: '무급',
+      equity: false,
+      workFromHome: false,
+      flexibleHours: false,
+      meals: true,
+      education: false,
+      equipment: false,
+      vacation: '해당없음',
+      other: ['대회 참가비 무료', '식사 제공', '네트워킹 기회', '수상시 상금 배분']
+    },
     views: 456,
     applicantsCount: 18,
     bookmarksCount: 45,
