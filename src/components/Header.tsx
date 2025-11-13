@@ -36,6 +36,16 @@ export default function Header() {
                 추천
               </Link>
               <Link
+                href="/teams"
+                className={`transition-colors ${
+                  isActive('/teams')
+                    ? 'text-blue-600 font-medium border-b-2 border-blue-600 pb-1'
+                    : 'text-gray-700 hover:text-blue-600'
+                }`}
+              >
+                팀 모집
+              </Link>
+              <Link
                 href="/community"
                 className={`transition-colors ${
                   isActive('/community')
@@ -75,6 +85,17 @@ export default function Header() {
                 }`}
               >
                 추천
+              </Link>
+              <Link
+                href="/teams"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`px-4 py-2 rounded-md transition-colors ${
+                  isActive('/teams')
+                    ? 'bg-blue-50 text-blue-600 font-medium'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                팀 모집
               </Link>
               <Link
                 href="/community"

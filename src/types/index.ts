@@ -293,3 +293,100 @@ export interface CommunityComment {
   updatedAt?: string
   parentId?: string // 대댓글용
 }
+
+// 팀 모집 타입
+export interface TeamRecruitment {
+  id: string
+  title: string
+  description: string
+  leaderId: string
+  leaderName: string
+
+  // 팀 정보
+  teamType: 'project' | 'study' | 'startup' | 'contest' | 'opensource'
+  industry: string // IT/기술, 금융, 의료, 교육, 마케팅, 디자인 등
+  techStack: string[] // 기술 스택
+
+  // 모집 정보
+  positions: TeamPosition[] // 모집 포지션
+  totalSlots: number // 전체 정원
+  filledSlots: number // 현재 인원
+
+  // 활동 정보
+  duration: string // 활동 기간 (예: "3개월", "6개월", "상시")
+  location: 'online' | 'offline' | 'hybrid'
+  locationDetail?: string // 오프라인 시 상세 위치
+  schedule?: string // 활동 일정 (예: "주 2회, 평일 저녁")
+
+  // 매칭 관련
+  requiredSkills: string[] // 필수 스킬
+  preferredSkills?: string[] // 우대 스킬
+  experienceLevel: 'beginner' | 'intermediate' | 'advanced' | 'any'
+
+  // 통계
+  views: number
+  applicantsCount: number
+  bookmarksCount: number
+
+  // 상태
+  status: 'recruiting' | 'full' | 'closed'
+  tags?: string[]
+
+  createdAt: string
+  updatedAt?: string
+  deadline?: string // 마감일
+}
+
+// 팀 포지션
+export interface TeamPosition {
+  id: string
+  title: string // 포지션명 (예: "프론트엔드 개발자", "백엔드 개발자", "디자이너")
+  description: string
+  requiredCount: number // 필요 인원
+  filledCount: number // 현재 인원
+  requiredSkills: string[]
+  responsibilities: string[] // 담당 업무
+}
+
+// 팀 지원
+export interface TeamApplication {
+  id: string
+  teamId: string
+  positionId: string
+
+  // 지원자 정보
+  applicantId: string
+  applicantName: string
+
+  // 지원 내용
+  motivation: string // 지원 동기
+  experience: string // 관련 경험
+  availableTime: string // 가능한 시간
+  portfolioUrl?: string
+  githubUrl?: string
+
+  // 매칭 점수
+  matchScore?: number // 0-100
+
+  // 상태
+  status: 'pending' | 'reviewing' | 'accepted' | 'rejected' | 'waitlisted'
+
+  createdAt: string
+  reviewedAt?: string
+  reviewerNote?: string // 팀장 메모
+}
+
+// 팀 매칭 결과
+export interface TeamMatchResult {
+  teamId: string
+  applicantId: string
+  matchScore: number // 0-100
+  matchReasons: {
+    skillMatch: number // 스킬 매칭 점수
+    experienceMatch: number // 경력 매칭 점수
+    availabilityMatch: number // 활동 가능 시간 매칭 점수
+    locationMatch: number // 위치 매칭 점수
+  }
+  recommendations: string[] // 추천 이유
+  concerns?: string[] // 우려사항
+}
