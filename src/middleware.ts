@@ -1,11 +1,37 @@
 /**
- * Next.js Middleware for Security Headers
+ * Next.js Middleware for Security Headers and Authentication
  */
 
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // Get session from cookie
+  const session = request.cookies.get('sb-access-token')
+  const isAuthenticated = !!session
+
+  // Define protected routes (require authentication)
+  const protectedRoutes = ['/dashboard', '/profile', '/teams/create', '/applications']
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
+
+  // Define auth routes (login, signup)
+  const authRoutes = ['/auth/login', '/auth/signup']
+  const isAuthRoute = authRoutes.some(route => pathname.startsWith(route))
+
+  // Redirect unauthenticated users trying to access protected routes
+  if (isProtectedRoute && !isAuthenticated) {
+    const loginUrl = new URL('/auth/login', request.url)
+    loginUrl.searchParams.set('next', pathname)
+    return NextResponse.redirect(loginUrl)
+  }
+
+  // Redirect authenticated users away from auth pages
+  if (isAuthRoute && isAuthenticated) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
   // Clone the response
   const response = NextResponse.next()
 

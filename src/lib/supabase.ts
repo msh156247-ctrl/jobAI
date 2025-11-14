@@ -1,19 +1,36 @@
 import { createClient } from '@supabase/supabase-js'
 import { Database } from '@/types/database'
 
+// ============================================================================
+// Environment Variables Validation
+// ============================================================================
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Supabase URL and Anon Key must be provided in environment variables')
+  throw new Error(
+    'Missing Supabase environment variables. Please check your .env.local file:\n' +
+    '- NEXT_PUBLIC_SUPABASE_URL\n' +
+    '- NEXT_PUBLIC_SUPABASE_ANON_KEY'
+  )
 }
 
-// 실제 Supabase 클라이언트 생성
+// ============================================================================
+// Client-Side Supabase Client
+// ============================================================================
+
+/**
+ * Client-side Supabase client
+ * Use this in React components, hooks, and client-side logic.
+ */
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+    flowType: 'pkce', // Use PKCE flow for better security
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
   },
   realtime: {
@@ -22,6 +39,24 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     },
   },
 })
+
+// ============================================================================
+// Server-Side Supabase Client (Service Role)
+// ============================================================================
+
+/**
+ * Server-side Supabase client with service role key
+ * ⚠️ WARNING: This client bypasses Row Level Security (RLS).
+ * Only use in server-side code for admin operations.
+ */
+export const supabaseAdmin = supabaseServiceRoleKey
+  ? createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+  : null
 
 // 헬퍼 함수: 현재 사용자 가져오기
 export const getCurrentUser = async () => {
@@ -66,10 +101,10 @@ export const signOut = async () => {
   if (error) throw error
 }
 
-// 소셜 로그인 (Google, Kakao, Naver)
-export const signInWithProvider = async (provider: 'google' | 'kakao' | 'naver') => {
+// 소셜 로그인 (Google, GitHub)
+export const signInWithProvider = async (provider: 'google' | 'github') => {
   const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: provider as any,
+    provider,
     options: {
       redirectTo: `${window.location.origin}/auth/callback`,
       queryParams: provider === 'google' ? {
@@ -77,6 +112,24 @@ export const signInWithProvider = async (provider: 'google' | 'kakao' | 'naver')
         prompt: 'consent',
       } : undefined,
     },
+  })
+  if (error) throw error
+  return data
+}
+
+// 비밀번호 재설정 요청
+export const resetPassword = async (email: string) => {
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/auth/reset-password`,
+  })
+  if (error) throw error
+  return data
+}
+
+// 비밀번호 업데이트
+export const updatePassword = async (newPassword: string) => {
+  const { data, error } = await supabase.auth.updateUser({
+    password: newPassword,
   })
   if (error) throw error
   return data
