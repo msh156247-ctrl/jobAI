@@ -13,14 +13,14 @@ import CrawlProgressBar from '@/components/CrawlProgressBar'
 import JobCard from '@/components/JobCard'
 import NaturalLanguageSearch from '@/components/NaturalLanguageSearch'
 import NewsTab from '@/components/NewsTab'
-import { Settings, Building2, Bookmark, Search, Filter, Trash2, Newspaper } from 'lucide-react'
+import { Settings, Building2, Search, Filter, Trash2, Newspaper } from 'lucide-react'
 
 interface RecommendedJob extends Job {
   matchScore: number
   matchReasons: string[]
 }
 
-type ViewTab = 'jobs' | 'jobseeker' | 'saved' | 'news'
+type ViewTab = 'news' | 'jobs'
 
 // 업종 카테고리
 const industryCategories = {
@@ -108,7 +108,7 @@ function HomePage() {
   const [savedJobs, setSavedJobs] = useState<string[]>([])
   const [jobs, setJobs] = useState<RecommendedJob[]>([])
   const [loading, setLoading] = useState(true)
-  const [currentTab, setCurrentTab] = useState<ViewTab>('jobs')
+  const [currentTab, setCurrentTab] = useState<ViewTab>('news')
   const [crawlMetadata, setCrawlMetadata] = useState<ReturnType<typeof getCrawlMetadata>>(null)
 
   // 검색 필터 상태
@@ -386,9 +386,6 @@ function HomePage() {
       default: return 'bg-gray-100 text-gray-700 border-gray-200'
     }
   }
-
-  // 저장한 공고 필터링
-  const savedJobsList = jobs.filter(job => isSaved(job.id))
 
   // 검색 필터 적용
   const filteredJobs = jobs.filter(job => {
@@ -696,28 +693,6 @@ function HomePage() {
         <div className="mb-6 border-b border-gray-200">
           <div className="flex gap-1 overflow-x-auto">
             <button
-              onClick={() => setCurrentTab('jobs')}
-              className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors whitespace-nowrap ${
-                currentTab === 'jobs'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Building2 size={20} />
-              추천 공고
-            </button>
-            <button
-              onClick={() => setCurrentTab('saved')}
-              className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors whitespace-nowrap ${
-                currentTab === 'saved'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Bookmark size={20} />
-              저장한 공고 ({savedJobsList.length})
-            </button>
-            <button
               onClick={() => setCurrentTab('news')}
               className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors whitespace-nowrap ${
                 currentTab === 'news'
@@ -726,12 +701,28 @@ function HomePage() {
               }`}
             >
               <Newspaper size={20} />
-              기업 뉴스
+              뉴스
+            </button>
+            <button
+              onClick={() => setCurrentTab('jobs')}
+              className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors whitespace-nowrap ${
+                currentTab === 'jobs'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Building2 size={20} />
+              채용 공고
             </button>
           </div>
         </div>
 
-        {/* 추천 공고 탭 */}
+        {/* 뉴스 탭 */}
+        {currentTab === 'news' && (
+          <NewsTab />
+        )}
+
+        {/* 채용 공고 탭 */}
         {currentTab === 'jobs' && (
           <>
             {/* 구직 사이트 크롤링 버튼 */}
@@ -1142,37 +1133,6 @@ function HomePage() {
           </>
         )}
 
-        {/* 저장한 공고 탭 */}
-        {currentTab === 'saved' && (
-          <>
-            {savedJobsList.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-lg shadow">
-                <Bookmark className="mx-auto mb-4 text-gray-400" size={48} />
-                <p className="text-gray-600 mb-2">저장한 공고가 없습니다</p>
-                <p className="text-sm text-gray-500">관심있는 공고를 저장해보세요</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-4">
-                {savedJobsList.map((job, index) => (
-                  <JobCard
-                    key={job.id}
-                    job={job}
-                    isSaved={true}
-                    onToggleSave={toggleSave}
-                    onApply={trackApply}
-                    showPreferences={hasPreferences()}
-                    index={index}
-                  />
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* 기업 뉴스 탭 */}
-        {currentTab === 'news' && (
-          <NewsTab />
-        )}
       </main>
 
     </div>

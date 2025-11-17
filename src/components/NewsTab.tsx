@@ -1,25 +1,20 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { RefreshCw, Search, Filter, Building2, Newspaper } from 'lucide-react'
+import { RefreshCw, Search, Filter, Newspaper } from 'lucide-react'
 import NewsCard from './NewsCard'
-import CompanyReport from './CompanyReport'
-import type { NewsArticle, CompanyNewsReport } from '@/lib/news/types'
+import type { NewsArticle } from '@/lib/news/types'
 import { fetchNews, refreshNews } from '@/lib/news'
-import { getAllCompanyNames } from '@/lib/news/companyDictionary'
 
 export default function NewsTab() {
   const [articles, setArticles] = useState<NewsArticle[]>([])
-  const [companyReports, setCompanyReports] = useState<CompanyNewsReport[]>([])
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
   // 필터
   const [searchKeyword, setSearchKeyword] = useState('')
-  const [selectedCompany, setSelectedCompany] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedSource, setSelectedSource] = useState('')
-  const [selectedIssueType, setSelectedIssueType] = useState('')
-  const [showCompanyReports, setShowCompanyReports] = useState(true)
 
   // 초기 로드 제거 - 사용자가 새로고침 버튼을 클릭해야 뉴스 로드
 
@@ -28,7 +23,6 @@ export default function NewsTab() {
     try {
       const data = await fetchNews()
       setArticles(data.articles)
-      setCompanyReports(data.companyReports)
     } catch (error) {
       console.error('Failed to load news:', error)
     } finally {
@@ -41,7 +35,6 @@ export default function NewsTab() {
     try {
       const data = await refreshNews()
       setArticles(data.articles)
-      setCompanyReports(data.companyReports)
     } catch (error) {
       console.error('Failed to refresh news:', error)
       alert('뉴스를 새로고침하는 데 실패했습니다.')
@@ -56,28 +49,25 @@ export default function NewsTab() {
         !article.content.toLowerCase().includes(searchKeyword.toLowerCase())) {
       return false
     }
-    if (selectedCompany && article.company !== selectedCompany) {
+    if (selectedCategory && (!article.category || article.category !== selectedCategory)) {
       return false
     }
     if (selectedSource && article.source !== selectedSource) {
       return false
     }
-    if (selectedIssueType && (!article.issueType || !article.issueType.includes(selectedIssueType as any))) {
-      return false
-    }
     return true
   })
 
-  const filteredReports = companyReports.filter(report => {
-    if (selectedCompany && report.companyName !== selectedCompany) {
-      return false
-    }
-    return true
-  })
+  // 주제 카테고리
+  const categories = ['정치', '경제', '사회', 'IT/과학', '문화', '스포츠', '국제', '연예', '생활/건강']
 
-  const companyNames = getAllCompanyNames()
-  const sources = ['ZDNet', '서울경제', '전자신문', '아시아경제', '한국경제', '매일경제', 'IT조선', '디지털타임스', '블로터', '한겨레', '조선일보', '중앙일보', '연합뉴스', 'SBS뉴스', 'MBC뉴스']
-  const issueTypes = ['채용', '투자', '기술', '리스크', '정책', '혁신', '글로벌', '규제', '환경', '사회적가치']
+  // 주요 언론사
+  const sources = [
+    '연합뉴스', 'KBS', 'MBC', 'SBS', 'JTBC',
+    '조선일보', '중앙일보', '동아일보', '한겨레', '경향신문',
+    '한국경제', '매일경제', '서울경제', '머니투데이', '파이낸셜뉴스',
+    '전자신문', 'ZDNet', 'IT조선', '디지털타임스', '블로터'
+  ]
 
   return (
     <div>
@@ -85,8 +75,8 @@ export default function NewsTab() {
       <div className="mb-6 bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">기업 뉴스</h3>
-            <p className="text-sm text-gray-600">IT 기업의 최신 뉴스와 동향을 확인하세요</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">뉴스</h3>
+            <p className="text-sm text-gray-600">국내 주요 언론사의 최신 뉴스를 한눈에 확인하세요</p>
           </div>
           <button
             onClick={handleRefresh}
@@ -124,17 +114,17 @@ export default function NewsTab() {
         </div>
 
         {/* 필터 옵션 */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">기업</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">주제</label>
             <select
-              value={selectedCompany}
-              onChange={(e) => setSelectedCompany(e.target.value)}
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             >
-              <option value="">전체 기업</option>
-              {companyNames.map(name => (
-                <option key={name} value={name}>{name}</option>
+              <option value="">전체 주제</option>
+              {categories.map(category => (
+                <option key={category} value={category}>{category}</option>
               ))}
             </select>
           </div>
@@ -146,36 +136,21 @@ export default function NewsTab() {
               onChange={(e) => setSelectedSource(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             >
-              <option value="">전체 출처</option>
+              <option value="">전체 언론사</option>
               {sources.map(source => (
                 <option key={source} value={source}>{source}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">이슈 타입</label>
-            <select
-              value={selectedIssueType}
-              onChange={(e) => setSelectedIssueType(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            >
-              <option value="">전체 이슈</option>
-              {issueTypes.map(type => (
-                <option key={type} value={type}>{type}</option>
               ))}
             </select>
           </div>
         </div>
 
         {/* 필터 초기화 */}
-        {(searchKeyword || selectedCompany || selectedSource || selectedIssueType) && (
+        {(searchKeyword || selectedCategory || selectedSource) && (
           <button
             onClick={() => {
               setSearchKeyword('')
-              setSelectedCompany('')
+              setSelectedCategory('')
               setSelectedSource('')
-              setSelectedIssueType('')
             }}
             className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium"
           >
@@ -183,42 +158,6 @@ export default function NewsTab() {
           </button>
         )}
       </div>
-
-      {/* 기업별 리포트 */}
-      {showCompanyReports && filteredReports.length > 0 && (
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Building2 size={20} />
-              기업별 리포트
-            </h3>
-            <button
-              onClick={() => setShowCompanyReports(false)}
-              className="text-sm text-gray-600 hover:text-gray-800"
-            >
-              숨기기
-            </button>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {filteredReports.slice(0, 6).map(report => (
-              <CompanyReport
-                key={report.companyName}
-                report={report}
-                onClick={() => setSelectedCompany(report.companyName)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {!showCompanyReports && (
-        <button
-          onClick={() => setShowCompanyReports(true)}
-          className="mb-6 text-sm text-blue-600 hover:text-blue-800 font-medium"
-        >
-          기업별 리포트 보기
-        </button>
-      )}
 
       {/* 뉴스 기사 목록 */}
       <div className="mb-4">

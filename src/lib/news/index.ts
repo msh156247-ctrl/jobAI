@@ -41,10 +41,17 @@ export async function fetchNews(params?: NewsScraperParams): Promise<{
 
   // 캐시가 없거나 만료되었으면 API 호출
   try {
-    const response = await fetch('/api/crawl-news', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params || {})
+    // Query params 구성
+    const queryParams = new URLSearchParams()
+    if (params?.category) queryParams.set('category', params.category)
+    if (params?.source) queryParams.set('source', params.source)
+    if (params?.limit) queryParams.set('limit', params.limit.toString())
+
+    const url = `/api/news/crawl${queryParams.toString() ? '?' + queryParams.toString() : ''}`
+
+    const response = await fetch(url, {
+      method: 'GET',
+      cache: 'no-store'
     })
 
     if (!response.ok) {
@@ -60,11 +67,14 @@ export async function fetchNews(params?: NewsScraperParams): Promise<{
         sourceBreakdown[article.source] = (sourceBreakdown[article.source] || 0) + 1
       }
 
-      cacheNewsData(data.articles, data.companyReports, sourceBreakdown)
+      // 기업 리포트 생성 (옵션)
+      const companyReports: CompanyNewsReport[] = []
+
+      cacheNewsData(data.articles, companyReports, sourceBreakdown)
 
       return {
         articles: data.articles,
-        companyReports: data.companyReports
+        companyReports
       }
     }
 
@@ -91,10 +101,17 @@ export async function refreshNews(params?: NewsScraperParams): Promise<{
   companyReports: CompanyNewsReport[]
 }> {
   try {
-    const response = await fetch('/api/crawl-news', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params || {})
+    // Query params 구성
+    const queryParams = new URLSearchParams()
+    if (params?.category) queryParams.set('category', params.category)
+    if (params?.source) queryParams.set('source', params.source)
+    if (params?.limit) queryParams.set('limit', params.limit.toString())
+
+    const url = `/api/news/crawl${queryParams.toString() ? '?' + queryParams.toString() : ''}`
+
+    const response = await fetch(url, {
+      method: 'GET',
+      cache: 'no-store'
     })
 
     if (!response.ok) {
@@ -109,11 +126,14 @@ export async function refreshNews(params?: NewsScraperParams): Promise<{
         sourceBreakdown[article.source] = (sourceBreakdown[article.source] || 0) + 1
       }
 
-      cacheNewsData(data.articles, data.companyReports, sourceBreakdown)
+      // 기업 리포트 생성 (옵션)
+      const companyReports: CompanyNewsReport[] = []
+
+      cacheNewsData(data.articles, companyReports, sourceBreakdown)
 
       return {
         articles: data.articles,
-        companyReports: data.companyReports
+        companyReports
       }
     }
 
