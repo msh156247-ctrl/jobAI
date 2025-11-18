@@ -15,6 +15,7 @@ export default function NewsTab() {
   const [searchKeyword, setSearchKeyword] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedSource, setSelectedSource] = useState('')
+  const [selectedKeyword, setSelectedKeyword] = useState('')
 
   // 초기 로드 제거 - 사용자가 새로고침 버튼을 클릭해야 뉴스 로드
 
@@ -55,24 +56,48 @@ export default function NewsTab() {
     if (selectedSource && article.source !== selectedSource) {
       return false
     }
+    if (selectedKeyword && !article.keywords?.includes(selectedKeyword)) {
+      return false
+    }
     return true
   })
+
+  // 모든 기사에서 사용된 키워드 추출
+  const allKeywords = Array.from(new Set(articles.flatMap(article => article.keywords || [])))
+    .sort()
 
   // 주제 카테고리
   const categories = ['정치', '경제', '사회', 'IT/과학', '문화', '스포츠', '국제', '연예', '생활/건강']
 
   // 주요 언론사 (실제 RSS 피드가 구성된 언론사만 표시)
   const sources = [
+    // 종합 일간지
     '연합뉴스',
+    '조선일보',
+    '중앙일보',
+    '동아일보',
+    '한겨레',
+    '경향신문',
+    '서울신문',
+    '국민일보',
+    '세계일보',
+    // 방송사
     'KBS',
     'MBC',
     'SBS',
-    '한겨레',
-    '경향신문',
+    'JTBC',
+    // 경제지
     '한국경제',
     '매일경제',
+    '서울경제',
+    '머니투데이',
+    '파이낸셜뉴스',
+    // IT/과학
     '전자신문',
-    'ZDNet'
+    'ZDNet',
+    'IT조선',
+    '디지털타임스',
+    '블로터'
   ]
 
   return (
@@ -120,7 +145,7 @@ export default function NewsTab() {
         </div>
 
         {/* 필터 옵션 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">주제</label>
             <select
@@ -148,15 +173,32 @@ export default function NewsTab() {
               ))}
             </select>
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              키워드 {allKeywords.length > 0 && <span className="text-xs text-gray-500">({allKeywords.length}개)</span>}
+            </label>
+            <select
+              value={selectedKeyword}
+              onChange={(e) => setSelectedKeyword(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            >
+              <option value="">전체 키워드</option>
+              {allKeywords.map(keyword => (
+                <option key={keyword} value={keyword}>{keyword}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* 필터 초기화 */}
-        {(searchKeyword || selectedCategory || selectedSource) && (
+        {(searchKeyword || selectedCategory || selectedSource || selectedKeyword) && (
           <button
             onClick={() => {
               setSearchKeyword('')
               setSelectedCategory('')
               setSelectedSource('')
+              setSelectedKeyword('')
             }}
             className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium"
           >
