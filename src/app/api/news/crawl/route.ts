@@ -27,26 +27,78 @@ const RSS_FEEDS: Record<string, { url: string; category?: NewsCategory }[]> = {
     { url: 'https://news.kbs.co.kr/rss/news/news_15.xml', category: '문화' },
     { url: 'https://news.kbs.co.kr/rss/news/news_16.xml', category: '스포츠' },
   ],
+  'MBC': [
+    { url: 'https://imnews.imbc.com/rss/news/news_00.xml' }, // 전체 뉴스
+  ],
+  'SBS': [
+    { url: 'https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=01&plink=RSSREADER' }, // 정치
+    { url: 'https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=02&plink=RSSREADER', category: '경제' },
+    { url: 'https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=07&plink=RSSREADER', category: '사회' },
+    { url: 'https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=08&plink=RSSREADER', category: 'IT/과학' },
+  ],
+  '한겨레': [
+    { url: 'https://www.hani.co.kr/rss/' }, // 전체 뉴스
+  ],
+  '경향신문': [
+    { url: 'https://www.khan.co.kr/rss/rssdata/total_news.xml' }, // 전체 뉴스
+  ],
+  '한국경제': [
+    { url: 'https://www.hankyung.com/rss/economy', category: '경제' },
+    { url: 'https://www.hankyung.com/rss/society', category: '사회' },
+  ],
+  '매일경제': [
+    { url: 'https://www.mk.co.kr/rss/30100041/' }, // 전체 뉴스
+  ],
+  '전자신문': [
+    { url: 'https://www.etnews.com/rss.xml', category: 'IT/과학' },
+  ],
+  'ZDNet': [
+    { url: 'https://zdnet.co.kr/rss/news.xml', category: 'IT/과학' },
+  ],
 }
 
-// XML 파싱을 위한 간단한 유틸리티 함수
+/**
+ * XML 파싱을 위한 간단한 유틸리티 함수
+ * RSS 아이템에서 뉴스 데이터 추출
+ */
 function parseRSSItem(itemText: string, source: string, category?: NewsCategory): NewsArticle | null {
   try {
+    // CDATA 섹션과 일반 텍스트 모두 처리
     const title = itemText.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)?.[1] ||
                   itemText.match(/<title>(.*?)<\/title>/)?.[1]
-    const link = itemText.match(/<link>(.*?)<\/link>/)?.[1]
+
+    const link = itemText.match(/<link><!\[CDATA\[(.*?)\]\]><\/link>/)?.[1] ||
+                 itemText.match(/<link>(.*?)<\/link>/)?.[1]
+
     const description = itemText.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/)?.[1] ||
                        itemText.match(/<description>(.*?)<\/description>/)?.[1]
+
     const pubDate = itemText.match(/<pubDate>(.*?)<\/pubDate>/)?.[1]
     const guid = itemText.match(/<guid.*?>(.*?)<\/guid>/)?.[1]
 
-    if (!title || !link) return null
+    // 필수 필드 검증
+    if (!title || !link) {
+      return null
+    }
+
+    // HTML 태그 제거 및 정리
+    const cleanText = (text: string) => {
+      return text
+        .replace(/<[^>]*>/g, '') // HTML 태그 제거
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'")
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&')
+        .trim()
+    }
 
     return {
       id: guid || link,
-      title: title.trim(),
-      content: description?.trim() || '',
-      summary: description?.trim() || '',
+      title: cleanText(title),
+      content: description ? cleanText(description) : '',
+      summary: description ? cleanText(description).substring(0, 200) : '',
       url: link.trim(),
       source,
       publishedAt: pubDate || new Date().toISOString(),
@@ -60,6 +112,9 @@ function parseRSSItem(itemText: string, source: string, category?: NewsCategory)
   }
 }
 
+/**
+ * RSS 피드에서 뉴스 기사 크롤링
+ */
 async function fetchRSS(url: string, source: string, category?: NewsCategory): Promise<NewsArticle[]> {
   try {
     const response = await fetch(url, {
@@ -70,7 +125,7 @@ async function fetchRSS(url: string, source: string, category?: NewsCategory): P
     })
 
     if (!response.ok) {
-      console.error(`Failed to fetch RSS from ${url}: ${response.status}`)
+      console.error(`[RSS Crawl] Failed to fetch from ${source} (${url}): ${response.status} ${response.statusText}`)
       return []
     }
 
@@ -87,19 +142,24 @@ async function fetchRSS(url: string, source: string, category?: NewsCategory): P
       }
     }
 
+    console.log(`[RSS Crawl] Successfully fetched ${articles.length} articles from ${source}${category ? ` (${category})` : ''}`)
     return articles
   } catch (error) {
-    console.error(`Error fetching RSS from ${url}:`, error)
+    console.error(`[RSS Crawl] Error fetching from ${source} (${url}):`, error)
     return []
   }
 }
 
 export async function GET(request: NextRequest) {
+  const startTime = Date.now()
+
   try {
     const searchParams = request.nextUrl.searchParams
     const category = searchParams.get('category') as NewsCategory | null
     const source = searchParams.get('source')
     const limit = parseInt(searchParams.get('limit') || '50')
+
+    console.log(`[RSS Crawl] Starting crawl - category: ${category || 'all'}, source: ${source || 'all'}, limit: ${limit}`)
 
     const allArticles: NewsArticle[] = []
 
@@ -122,10 +182,15 @@ export async function GET(request: NextRequest) {
     }
 
     const results = await Promise.allSettled(crawlPromises)
+    let successCount = 0
+    let failCount = 0
 
     for (const result of results) {
       if (result.status === 'fulfilled') {
         allArticles.push(...result.value)
+        successCount++
+      } else {
+        failCount++
       }
     }
 
@@ -142,6 +207,9 @@ export async function GET(request: NextRequest) {
     // 제한 적용
     const limitedArticles = sortedArticles.slice(0, limit)
 
+    const duration = Date.now() - startTime
+    console.log(`[RSS Crawl] Completed - Total: ${allArticles.length}, Unique: ${uniqueArticles.length}, Returned: ${limitedArticles.length}, Success: ${successCount}, Failed: ${failCount}, Duration: ${duration}ms`)
+
     return NextResponse.json({
       success: true,
       count: limitedArticles.length,
@@ -151,10 +219,19 @@ export async function GET(request: NextRequest) {
         category,
         source,
         limit,
+        totalFetched: allArticles.length,
+        uniqueArticles: uniqueArticles.length,
+        duplicatesRemoved: allArticles.length - uniqueArticles.length,
+        crawlStats: {
+          successCount,
+          failCount,
+          duration: `${duration}ms`
+        }
       }
     })
   } catch (error) {
-    console.error('News crawl error:', error)
+    const duration = Date.now() - startTime
+    console.error(`[RSS Crawl] Failed after ${duration}ms:`, error)
     return NextResponse.json(
       {
         success: false,
