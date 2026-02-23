@@ -3,6 +3,23 @@
 import { useMemo, useState } from 'react';
 
 type DealType = '매매' | '전세' | '월세/전월세';
+type Purpose = '실거주' | '투자' | '신혼부부/가족이주' | '직주근접';
+type MaritalStatus = '미혼' | '기혼' | '예비부부';
+
+interface ApiResult {
+  updatedAt: string;
+  loan: {
+    ltv: number;
+    dti: number;
+    interestRateRange: { min: number; max: number };
+    maxByLtv: number;
+    maxByDti: number;
+    possibleLoan: number;
+    shortage: number;
+  };
+  docs: string[];
+  notice: string;
+}
 
 const regionSamples: Record<string, string[]> = {
   서울: ['강남구 아파트', '노원구 빌라', '마포구 오피스텔'],
@@ -28,17 +45,25 @@ function formatKrw(amount: number) {
 
 export default function RealEstatePlanner() {
   const [region, setRegion] = useState('서울');
+  const [propertyType, setPropertyType] = useState('아파트');
   const [dealType, setDealType] = useState<DealType>('전세');
-  const [price, setPrice] = useState(600000000);
-  const [deposit, setDeposit] = useState(100000000);
+  const [targetPrice, setTargetPrice] = useState(600000000);
+  const [currentFunds, setCurrentFunds] = useState(100000000);
   const [monthlyRent, setMonthlyRent] = useState(800000);
+
+  const [age, setAge] = useState(32);
+  const [maritalStatus, setMaritalStatus] = useState<MaritalStatus>('미혼');
+  const [purpose, setPurpose] = useState<Purpose>('실거주');
   const [income, setIncome] = useState(60000000);
   const [existingDebt, setExistingDebt] = useState(10000000);
 
-  const loanResult = useMemo(() => {
+  const [latest, setLatest] = useState<ApiResult | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const quickLoan = useMemo(() => {
     const ltv = dealType === '매매' ? 0.7 : dealType === '전세' ? 0.8 : 0.6;
     const dti = 0.4;
-    const maxByLtv = price * ltv;
+    const maxByLtv = targetPrice * ltv;
     const maxByDti = income * dti * 6 - existingDebt;
     const possibleLoan = Math.max(0, Math.min(maxByLtv, maxByDti));
 
@@ -48,19 +73,78 @@ export default function RealEstatePlanner() {
       maxByLtv,
       maxByDti,
       possibleLoan,
-      shortage: dealType === '매매' ? Math.max(0, price - deposit - possibleLoan) : Math.max(0, deposit - possibleLoan),
+      shortage: Math.max(0, targetPrice - currentFunds - possibleLoan),
     };
-  }, [dealType, price, deposit, income, existingDebt]);
+  }, [dealType, targetPrice, currentFunds, income, existingDebt]);
+
+  const fetchLatest = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/planner/latest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          applicant: { age, maritalStatus, purpose, annualIncome: income, existingDebt },
+          finance: { currentFunds },
+          property: { region, propertyType, dealType, targetPrice, monthlyRent },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('최신 조건 조회 실패');
+      }
+
+      const data = (await response.json()) as ApiResult;
+      setLatest(data);
+    } catch {
+      setLatest(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <main className="container">
       <header className="hero">
         <h1>한국 부동산 집찾기 전략 플래너</h1>
-        <p>원하는 지역의 매매/전세/월세·전월세를 비교하고, 대출 가능 금액과 필수 서류를 한 번에 점검하세요.</p>
+        <p>신청자 상황(나이/결혼/거주 목적), 현재 자금, 매물 정보를 바탕으로 API 기반 최신 대출 조건을 확인하세요.</p>
       </header>
 
       <section className="card grid">
-        <h2>1) 탐색 조건</h2>
+        <h2>1) 신청자 정보</h2>
+        <label>
+          나이
+          <input type="number" value={age} onChange={(e) => setAge(Number(e.target.value))} />
+        </label>
+        <label>
+          결혼 상태
+          <select value={maritalStatus} onChange={(e) => setMaritalStatus(e.target.value as MaritalStatus)}>
+            <option>미혼</option>
+            <option>기혼</option>
+            <option>예비부부</option>
+          </select>
+        </label>
+        <label>
+          거주 목적
+          <select value={purpose} onChange={(e) => setPurpose(e.target.value as Purpose)}>
+            <option>실거주</option>
+            <option>신혼부부/가족이주</option>
+            <option>직주근접</option>
+            <option>투자</option>
+          </select>
+        </label>
+        <label>
+          연소득(원)
+          <input type="number" value={income} onChange={(e) => setIncome(Number(e.target.value))} />
+        </label>
+        <label>
+          기존 연간 부채상환액(원)
+          <input type="number" value={existingDebt} onChange={(e) => setExistingDebt(Number(e.target.value))} />
+        </label>
+      </section>
+
+      <section className="card grid">
+        <h2>2) 현재 가진 금액 + 부동산 정보</h2>
         <label>
           지역
           <select value={region} onChange={(e) => setRegion(e.target.value)}>
@@ -71,7 +155,10 @@ export default function RealEstatePlanner() {
             ))}
           </select>
         </label>
-
+        <label>
+          주택 유형
+          <input value={propertyType} onChange={(e) => setPropertyType(e.target.value)} placeholder="아파트, 빌라, 오피스텔" />
+        </label>
         <label>
           거래 유형
           <select value={dealType} onChange={(e) => setDealType(e.target.value as DealType)}>
@@ -80,48 +167,56 @@ export default function RealEstatePlanner() {
             <option>월세/전월세</option>
           </select>
         </label>
-
         <label>
-          매물가/보증금(원)
-          <input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} />
+          목표 매물가/보증금(원)
+          <input type="number" value={targetPrice} onChange={(e) => setTargetPrice(Number(e.target.value))} />
         </label>
-
         <label>
-          보유 현금(원)
-          <input type="number" value={deposit} onChange={(e) => setDeposit(Number(e.target.value))} />
+          현재 가진 금액(원)
+          <input type="number" value={currentFunds} onChange={(e) => setCurrentFunds(Number(e.target.value))} />
         </label>
-
         <label>
-          월세(원, 월세/전월세 시 참고)
+          월세(원)
           <input type="number" value={monthlyRent} onChange={(e) => setMonthlyRent(Number(e.target.value))} />
         </label>
       </section>
 
       <section className="card grid">
-        <h2>2) 대출 가능성 빠른 계산 (참고용)</h2>
-        <label>
-          연소득(원)
-          <input type="number" value={income} onChange={(e) => setIncome(Number(e.target.value))} />
-        </label>
-        <label>
-          기존 연간 부채상환액(원)
-          <input type="number" value={existingDebt} onChange={(e) => setExistingDebt(Number(e.target.value))} />
-        </label>
+        <h2>3) 대출 정보 조회</h2>
+        <button onClick={fetchLatest} disabled={loading} className="actionBtn">
+          {loading ? '조회 중...' : 'API로 최신 대출 조건 조회'}
+        </button>
 
         <ul className="result">
-          <li>LTV 기준 한도: 약 {formatKrw(loanResult.maxByLtv)}원 (가정 비율 {Math.round(loanResult.ltv * 100)}%)</li>
-          <li>DTI 기준 한도: 약 {formatKrw(loanResult.maxByDti)}원 (가정 비율 {Math.round(loanResult.dti * 100)}%)</li>
-          <li>
-            예상 대출 가능액: <strong>{formatKrw(loanResult.possibleLoan)}원</strong>
-          </li>
-          <li>자금 부족 예상: {formatKrw(loanResult.shortage)}원</li>
-          {dealType === '월세/전월세' && <li>월세 부담: 월 {formatKrw(monthlyRent)}원 + 관리비/보증보험료 별도 고려</li>}
+          <li>LTV 기준 한도(간이): 약 {formatKrw(quickLoan.maxByLtv)}원</li>
+          <li>DTI 기준 한도(간이): 약 {formatKrw(quickLoan.maxByDti)}원</li>
+          <li>예상 대출 가능액(간이): {formatKrw(quickLoan.possibleLoan)}원</li>
+          <li>자금 부족 예상(간이): {formatKrw(quickLoan.shortage)}원</li>
         </ul>
-        <p className="note">※ 실제 한도는 은행별 정책, 보증기관(HUG/HF/SGI), 신용점수, 주택 유형, 규제지역 여부에 따라 달라집니다.</p>
+
+        {latest && (
+          <div className="apiBox">
+            <p>업데이트 시각: {new Date(latest.updatedAt).toLocaleString('ko-KR')}</p>
+            <p>
+              API 대출 비율: LTV {Math.round(latest.loan.ltv * 100)}% / DTI {Math.round(latest.loan.dti * 100)}%
+            </p>
+            <p>
+              API 금리 범위(추정): 연 {latest.loan.interestRateRange.min}% ~ {latest.loan.interestRateRange.max}%
+            </p>
+            <p>API 대출 가능액(추정): {formatKrw(latest.loan.possibleLoan)}원</p>
+            <p>최종 부족자금: {formatKrw(latest.loan.shortage)}원</p>
+            <ul>
+              {latest.docs.map((doc) => (
+                <li key={doc}>{doc}</li>
+              ))}
+            </ul>
+            <p className="note">{latest.notice}</p>
+          </div>
+        )}
       </section>
 
       <section className="card">
-        <h2>3) 지역별 샘플 매물 종류</h2>
+        <h2>4) 지역별 샘플 매물 종류</h2>
         <ul>
           {regionSamples[region].map((item) => (
             <li key={item}>{item}</li>
@@ -130,23 +225,12 @@ export default function RealEstatePlanner() {
       </section>
 
       <section className="card">
-        <h2>4) 계약 전 필수 서류 체크리스트</h2>
+        <h2>5) 계약 전 필수 서류 체크리스트</h2>
         <ul>
           {requiredDocs.map((doc) => (
             <li key={doc}>{doc}</li>
           ))}
         </ul>
-      </section>
-
-      <section className="card">
-        <h2>5) 실행 전략</h2>
-        <ol>
-          <li>희망 지역/예산/거주기간 정의 → 매매 vs 전세 vs 월세·전월세 우선순위 확정</li>
-          <li>국토부 실거래가/네이버부동산/직방/호갱노노 등에서 시세와 동일단지 최근 거래 검증</li>
-          <li>등기부등본·건축물대장 확인 후 권리관계 이상 매물 제외</li>
-          <li>대출 사전심사(2~3개 금융사)로 한도/금리 비교 후 협상</li>
-          <li>계약서 특약(하자보수, 대출불가 시 해제, 잔금일 인도조건) 명시</li>
-        </ol>
       </section>
     </main>
   );
