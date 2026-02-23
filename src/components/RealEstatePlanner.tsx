@@ -21,12 +21,33 @@ interface ApiResult {
   notice: string;
 }
 
+interface MapListing {
+  id: string;
+  name: string;
+  district: string;
+  region: string;
+  price: number;
+  type: string;
+  x: number;
+  y: number;
+}
+
 const regionSamples: Record<string, string[]> = {
   서울: ['강남구 아파트', '노원구 빌라', '마포구 오피스텔'],
   경기: ['성남시 아파트', '수원시 빌라', '고양시 다세대'],
   인천: ['연수구 아파트', '부평구 빌라', '서구 오피스텔'],
   부산: ['해운대구 아파트', '수영구 빌라', '동래구 다세대'],
 };
+
+const mapListings: MapListing[] = [
+  { id: 'seoul-1', name: '강남 래미안', district: '강남구', region: '서울', price: 940000000, type: '아파트', x: 76, y: 58 },
+  { id: 'seoul-2', name: '노원 센트럴빌', district: '노원구', region: '서울', price: 510000000, type: '빌라', x: 39, y: 35 },
+  { id: 'seoul-3', name: '마포 리버뷰', district: '마포구', region: '서울', price: 690000000, type: '오피스텔', x: 28, y: 52 },
+  { id: 'gyeonggi-1', name: '판교 테크하우스', district: '성남시', region: '경기', price: 820000000, type: '아파트', x: 67, y: 64 },
+  { id: 'gyeonggi-2', name: '수원 헤리티지', district: '수원시', region: '경기', price: 560000000, type: '빌라', x: 49, y: 75 },
+  { id: 'incheon-1', name: '송도 센트럴', district: '연수구', region: '인천', price: 620000000, type: '아파트', x: 21, y: 61 },
+  { id: 'busan-1', name: '해운대 오션뷰', district: '해운대구', region: '부산', price: 730000000, type: '아파트', x: 82, y: 82 },
+];
 
 const requiredDocs = [
   '등기부등본 (갑구/을구 확인: 소유권, 근저당, 가압류)',
@@ -76,6 +97,18 @@ export default function RealEstatePlanner() {
       shortage: Math.max(0, targetPrice - currentFunds - possibleLoan),
     };
   }, [dealType, targetPrice, currentFunds, income, existingDebt]);
+
+  const availableBudget = latest?.loan.possibleLoan ? currentFunds + latest.loan.possibleLoan : currentFunds + quickLoan.possibleLoan;
+
+  const regionalMapStats = useMemo(() => {
+    const regionItems = mapListings.filter((item) => item.region === region);
+    const affordable = regionItems.filter((item) => item.price <= availableBudget);
+    return {
+      all: regionItems,
+      affordable,
+      remaining: affordable.length,
+    };
+  }, [region, availableBudget]);
 
   const fetchLatest = async () => {
     setLoading(true);
@@ -215,8 +248,45 @@ export default function RealEstatePlanner() {
         )}
       </section>
 
+      <section className="card grid">
+        <h2>4) 지도 기반 위치별 매물 확인</h2>
+        <p>
+          선택 지역 <strong>{region}</strong>에서 총 <strong>{regionalMapStats.all.length}개</strong> 중 현재 예산(보유금+대출)으로
+          입주 가능한 매물은 <strong>{regionalMapStats.remaining}개</strong>입니다.
+        </p>
+        <p className="note">현재 사용 가능 예산 추정: {formatKrw(availableBudget)}원</p>
+
+        <div className="mapCanvas" role="img" aria-label="지역별 매물 지도">
+          {regionalMapStats.all.map((item) => {
+            const canAfford = item.price <= availableBudget;
+            return (
+              <div
+                key={item.id}
+                className={`mapPin ${canAfford ? 'ok' : 'no'}`}
+                style={{ left: `${item.x}%`, top: `${item.y}%` }}
+                title={`${item.name} · ${item.district} · ${formatKrw(item.price)}원`}
+              >
+                <span>{canAfford ? '가능' : '부족'}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        <ul>
+          {regionalMapStats.all.map((item) => {
+            const canAfford = item.price <= availableBudget;
+            return (
+              <li key={`list-${item.id}`}>
+                [{item.district}] {item.name} ({item.type}) - {formatKrw(item.price)}원 /{' '}
+                <strong>{canAfford ? '입주 가능' : '예산 부족'}</strong>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
       <section className="card">
-        <h2>4) 지역별 샘플 매물 종류</h2>
+        <h2>5) 지역별 샘플 매물 종류</h2>
         <ul>
           {regionSamples[region].map((item) => (
             <li key={item}>{item}</li>
@@ -225,7 +295,7 @@ export default function RealEstatePlanner() {
       </section>
 
       <section className="card">
-        <h2>5) 계약 전 필수 서류 체크리스트</h2>
+        <h2>6) 계약 전 필수 서류 체크리스트</h2>
         <ul>
           {requiredDocs.map((doc) => (
             <li key={doc}>{doc}</li>

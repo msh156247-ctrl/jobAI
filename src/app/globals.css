@@ -78,6 +78,37 @@ button {
   line-height: 1.45;
 }
 
+.mapCanvas {
+  position: relative;
+  width: 100%;
+  height: 260px;
+  border-radius: 12px;
+  border: 1px solid #c7d2fe;
+  background: radial-gradient(circle at 20% 30%, #dbeafe 0, #dbeafe 20%, transparent 21%),
+    radial-gradient(circle at 70% 65%, #dbeafe 0, #dbeafe 24%, transparent 25%),
+    linear-gradient(180deg, #eff6ff, #e2e8f0);
+  overflow: hidden;
+}
+
+.mapPin {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 4px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
+}
+
+.mapPin.ok {
+  background: #16a34a;
+}
+
+.mapPin.no {
+  background: #dc2626;
+}
+
 ul,
 ol {
   margin: 8px 0 0;
