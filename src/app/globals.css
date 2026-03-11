@@ -1,137 +1,128 @@
-@import "tailwindcss";
-
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f5f7fb;
+  color: #111827;
 }
 
-/* Toast animation */
-@keyframes slide-in {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px;
+  display: grid;
+  gap: 16px;
 }
 
-.animate-slide-in {
-  animation: slide-in 0.3s ease-out;
+.hero {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: white;
+  border-radius: 16px;
+  padding: 24px;
 }
 
-/* Fade in animations */
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+.hero h1 {
+  margin: 0 0 8px;
 }
 
-@keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
 }
 
-@keyframes fade-in-down {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.grid {
+  display: grid;
+  gap: 10px;
 }
 
-@keyframes shake {
-  0%, 100% {
-    transform: translateX(0);
-  }
-  10%, 30%, 50%, 70%, 90% {
-    transform: translateX(-5px);
-  }
-  20%, 40%, 60%, 80% {
-    transform: translateX(5px);
-  }
+label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
 }
 
-@keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+input,
+select,
+button {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 14px;
 }
 
-@keyframes slide-up {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
+button {
+  cursor: pointer;
 }
 
-.animate-fade-in {
-  animation: fade-in 0.5s ease-out;
+.actionBtn {
+  background: #1d4ed8;
+  color: #fff;
+  border: none;
+  font-weight: 700;
 }
 
-.animate-fade-in-up {
-  animation: fade-in-up 0.5s ease-out;
+.apiBox {
+  border: 1px solid #dbeafe;
+  background: #f8fbff;
+  border-radius: 10px;
+  padding: 12px;
+  line-height: 1.45;
 }
 
-.animate-fade-in-down {
-  animation: fade-in-down 0.5s ease-out;
+.mapCanvas {
+  position: relative;
+  width: 100%;
+  height: 260px;
+  border-radius: 12px;
+  border: 1px solid #c7d2fe;
+  background: radial-gradient(circle at 20% 30%, #dbeafe 0, #dbeafe 20%, transparent 21%),
+    radial-gradient(circle at 70% 65%, #dbeafe 0, #dbeafe 24%, transparent 25%),
+    linear-gradient(180deg, #eff6ff, #e2e8f0);
+  overflow: hidden;
 }
 
-.animate-shake {
-  animation: shake 0.5s ease-in-out;
+.mapPin {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 4px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
 }
 
-.animate-scale-in {
-  animation: scale-in 0.3s ease-out;
+.mapPin.ok {
+  background: #16a34a;
 }
 
-.animate-slide-up {
-  animation: slide-up 0.3s ease-out;
+.mapPin.no {
+  background: #dc2626;
 }
 
-/* Mobile padding for tabbar */
-@media (max-width: 768px) {
-  .pb-safe {
-    padding-bottom: 5rem;
-  }
+ul,
+ol {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  line-height: 1.5;
+}
+
+.result {
+  background: #eff6ff;
+  border-radius: 10px;
+  padding: 10px 10px 10px 26px;
+}
+
+.note {
+  color: #374151;
+  font-size: 13px;
 }
